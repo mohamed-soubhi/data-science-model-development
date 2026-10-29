@@ -1,10 +1,11 @@
 """
-Script to generate an executive-ready, interactive HTML presentation dashboard
-summarizing the results, diagnostics, and testing of both Model Development labs.
+Comprehensive script to generate an executive-ready, interactive HTML presentation dashboard
+incorporating both Exploratory Data Analysis (EDA) and Model Development studies.
 """
 import base64
 import io
 import os
+import shutil
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -27,16 +28,56 @@ def fig_to_base64(fig):
     plt.close(fig)
     return base64.b64encode(buf.getvalue()).decode('utf-8')
 
-print("1. Generating charts for Automobile lab...")
+print("1. Generating charts for Automobile EDA...")
 df_auto = pd.read_csv("automobileEDA.csv")
+
+# EDA Fig 1: Pearson Correlation Horizontal Bar Chart
+eda_features = ['engine-size', 'curb-weight', 'horsepower', 'width', 'length', 'wheel-base', 'bore', 'city-mpg', 'highway-mpg', 'peak-rpm']
+eda_corrs = [stats.pearsonr(df_auto[c], df_auto['price'])[0] for c in eda_features]
+
+fig_eda_corr, ax_ec = plt.subplots(figsize=(7.5, 4.2))
+colors_corr = ['#2a9d8f' if x > 0.5 else ('#e63946' if x < -0.5 else '#64748b') for x in eda_corrs]
+y_pos = np.arange(len(eda_features))
+ax_ec.barh(y_pos, eda_corrs, color=colors_corr, height=0.65)
+ax_ec.set_yticks(y_pos)
+ax_ec.set_yticklabels(eda_features, fontsize=9.5)
+ax_ec.set_xlabel('Pearson Correlation (r) with Car Price', fontsize=10, fontweight='bold')
+ax_ec.set_title('Correlation Ranking: Continuous Features vs. Price', fontsize=12, fontweight='bold', pad=10)
+ax_ec.axvline(0, color='black', linewidth=1)
+ax_ec.invert_yaxis()
+for i, v in enumerate(eda_corrs):
+    offset = 0.02 if v >= 0 else -0.11
+    ax_ec.text(v + offset, i + 0.1, f"{v:+.2f}", color='black', fontweight='bold', fontsize=8.5)
+img_eda_corr = fig_to_base64(fig_eda_corr)
+
+# EDA Fig 2: Pivot Table Heatmap (drive-wheels vs body-style)
+grouped_res = df_auto[['drive-wheels', 'body-style', 'price']].groupby(['drive-wheels', 'body-style'], as_index=False).mean()
+pivot_data = grouped_res.pivot(index='drive-wheels', columns='body-style', values='price').fillna(0)
+
+fig_eda_hm, ax_hm = plt.subplots(figsize=(7.5, 4.2))
+sns.heatmap(pivot_data, annot=True, fmt=',.0f', cmap='YlGnBu', ax=ax_hm, 
+            cbar_kws={'label': 'Mean Price (USD)'}, linewidths=1, linecolor='white')
+ax_hm.set_title('Heatmap: Average Price by Drivetrain & Body Style', fontsize=12, fontweight='bold', pad=10)
+ax_hm.set_xlabel('Body Style', fontsize=10, fontweight='bold')
+ax_hm.set_ylabel('Drive Wheels', fontsize=10, fontweight='bold')
+img_eda_heatmap = fig_to_base64(fig_eda_hm)
+
+# EDA Fig 3: Categorical ANOVA Boxplot (drive-wheels vs price)
+fig_eda_box, ax_box = plt.subplots(figsize=(7.5, 4.2))
+sns.boxplot(x="drive-wheels", y="price", data=df_auto, hue="drive-wheels", palette="Blues", legend=False, ax=ax_box)
+ax_box.set_title('Price Distribution by Drive Wheels (ANOVA F = 67.95, p < 10⁻²²)', fontsize=12, fontweight='bold', pad=10)
+ax_box.set_xlabel('Drive Wheels', fontsize=10, fontweight='bold')
+ax_box.set_ylabel('Price ($)', fontsize=10, fontweight='bold')
+img_eda_box = fig_to_base64(fig_eda_box)
+
+print("2. Generating charts for Automobile Model Development...")
 Z_auto = df_auto[['horsepower', 'curb-weight', 'engine-size', 'highway-mpg']]
 y_auto = df_auto['price']
 
-# Train-test split
 Xa_tr, Xa_te, ya_tr, ya_te = train_test_split(Z_auto, y_auto, test_size=0.2, random_state=42)
 lm_auto = LinearRegression().fit(Xa_tr, ya_tr)
 
-# Fig 1: Automobile Actual vs Fitted KDE
+# Fig 4: Automobile Actual vs Fitted KDE
 fig1, ax1 = plt.subplots(figsize=(7, 4.2))
 sns.kdeplot(y_auto, color="#e63946", label="Actual Price", linewidth=2.5, fill=True, alpha=0.15, ax=ax1)
 sns.kdeplot(lm_auto.predict(Z_auto), color="#1d3557", label="MLR Fitted Values", linewidth=2.5, fill=True, alpha=0.15, ax=ax1)
@@ -46,7 +87,7 @@ ax1.set_ylabel("Density", fontsize=10)
 ax1.legend(frameon=True, facecolor='white', framealpha=0.9)
 img_auto_dist = fig_to_base64(fig1)
 
-# Fig 2: Automobile Overfitting (Deg 1 vs 3 vs 11)
+# Fig 5: Automobile Overfitting (Deg 1 vs 3 vs 11)
 x_mpg = df_auto[['highway-mpg']]
 x_tr, x_te, y_tr, y_te = train_test_split(x_mpg, y_auto, test_size=0.2, random_state=42)
 m1 = Pipeline([('model', LinearRegression())]).fit(x_tr, y_tr)
@@ -67,13 +108,13 @@ ax2.set_ylim(0, 52000)
 ax2.legend(frameon=True, facecolor='white', framealpha=0.9, fontsize=9)
 img_auto_overfit = fig_to_base64(fig2)
 
-# Fig 3: Automobile VIF / Heatmap
+# Fig 6: Automobile VIF / Heatmap
 fig3, ax3 = plt.subplots(figsize=(6, 4))
 sns.heatmap(Z_auto.corr(), annot=True, cmap='Blues', fmt='.2f', vmin=-1, vmax=1, ax=ax3, cbar=False)
 ax3.set_title("Automobile Predictor Correlation Matrix (VIF > 5)", fontsize=11, fontweight='bold', pad=10)
 img_auto_vif = fig_to_base64(fig3)
 
-# Fig 4: Automobile Q-Q Plot
+# Fig 7: Automobile Q-Q Plot
 res_auto = ya_tr - lm_auto.predict(Xa_tr)
 fig4, ax4 = plt.subplots(figsize=(6, 4))
 stats.probplot(res_auto, dist="norm", plot=ax4)
@@ -82,7 +123,7 @@ ax4.get_lines()[1].set_color('#e63946')
 ax4.set_title("Automobile: Normal Q-Q Plot of Residuals", fontsize=11, fontweight='bold', pad=10)
 img_auto_qq = fig_to_base64(fig4)
 
-print("2. Generating charts for Laptop lab...")
+print("3. Generating charts for Laptop lab...")
 df_lap = pd.read_csv("laptops.csv")
 lap_features = ['CPU_frequency', 'RAM_GB', 'Storage_GB_SSD', 'CPU_core', 'OS', 'GPU', 'Category']
 Z_lap = df_lap[lap_features]
@@ -91,7 +132,7 @@ y_lap = df_lap['Price']
 Xl_tr, Xl_te, yl_tr, yl_te = train_test_split(Z_lap, y_lap, test_size=0.2, random_state=42)
 lm_lap = LinearRegression().fit(Xl_tr, yl_tr)
 
-# Fig 5: Laptop Actual vs Fitted
+# Fig 8: Laptop Actual vs Fitted
 fig5, ax5 = plt.subplots(figsize=(7, 4.2))
 sns.kdeplot(y_lap, color="#e63946", label="Actual Price", linewidth=2.5, fill=True, alpha=0.15, ax=ax5)
 sns.kdeplot(lm_lap.predict(Z_lap), color="#2a9d8f", label="MLR Fitted Values", linewidth=2.5, fill=True, alpha=0.15, ax=ax5)
@@ -101,7 +142,7 @@ ax5.set_ylabel("Density", fontsize=10)
 ax5.legend(frameon=True, facecolor='white', framealpha=0.9)
 img_laptop_dist = fig_to_base64(fig5)
 
-# Fig 6: Laptop Overfitting comparison (MLR vs Poly Deg 2)
+# Fig 9: Laptop Overfitting comparison (MLR vs Poly Deg 2)
 p2_lap = Pipeline([('scale', StandardScaler()), ('poly', PolynomialFeatures(2, include_bias=False)), ('model', LinearRegression())]).fit(Xl_tr, yl_tr)
 
 fig6, ax6 = plt.subplots(figsize=(7, 4.2))
@@ -129,13 +170,7 @@ for rect in rects1 + rects2:
 
 img_laptop_overfit = fig_to_base64(fig6)
 
-# Fig 7: Laptop VIF / Correlation Matrix
-fig7, ax7 = plt.subplots(figsize=(6, 4))
-sns.heatmap(Z_lap.corr(), annot=True, cmap='Blues', fmt='.2f', vmin=-1, vmax=1, ax=ax7, cbar=False)
-ax7.set_title("Laptop Predictor Correlation Matrix (All VIF < 1.6)", fontsize=11, fontweight='bold', pad=10)
-img_laptop_vif = fig_to_base64(fig7)
-
-# Fig 8: Summary Benchmark Chart
+# Fig 10: Summary Benchmark Chart
 fig8, ax8 = plt.subplots(figsize=(10, 4.5))
 bench_models = [
     'Auto: MLR', 'Auto: Poly 2', 'Auto: Ridge', 'Auto: SLR Engine', 'Auto: Poly 3', 'Auto: Poly 11',
@@ -156,14 +191,14 @@ for i, v in enumerate(bench_test_r2):
     ax8.text(v + (0.015 if v >= 0 else -0.07), i + 0.1, f"{v:.3f}", color='black', fontweight='bold', fontsize=8.5)
 img_benchmark = fig_to_base64(fig8)
 
-print("3. Building HTML Presentation file...")
+print("4. Building updated HTML Presentation file...")
 
 html_content = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Model Development & Evaluation | Executive Presentation</title>
+    <title>Data Science Analytics & Model Development | Executive Presentation</title>
     <style>
         :root {{
             --primary: #1d3557;
@@ -194,7 +229,6 @@ html_content = f"""<!DOCTYPE html>
             padding-bottom: 60px;
         }}
 
-        /* Header & Navigation */
         header {{
             background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
             color: #ffffff;
@@ -216,7 +250,7 @@ html_content = f"""<!DOCTYPE html>
         }}
 
         .title-area h1 {{
-            font-size: 1.5rem;
+            font-size: 1.45rem;
             font-weight: 700;
             letter-spacing: -0.5px;
             display: flex;
@@ -226,25 +260,25 @@ html_content = f"""<!DOCTYPE html>
 
         .title-area p {{
             color: #94a3b8;
-            font-size: 0.9rem;
+            font-size: 0.88rem;
             margin-top: 4px;
         }}
 
-        /* Slide / Tab Controls */
         .nav-tabs {{
             display: flex;
-            gap: 8px;
+            gap: 6px;
             background: rgba(255, 255, 255, 0.1);
             padding: 4px;
             border-radius: 8px;
+            flex-wrap: wrap;
         }}
 
         .nav-tab {{
             background: transparent;
             border: none;
             color: #cbd5e1;
-            padding: 8px 16px;
-            font-size: 0.88rem;
+            padding: 8px 14px;
+            font-size: 0.84rem;
             font-weight: 600;
             border-radius: 6px;
             cursor: pointer;
@@ -262,7 +296,6 @@ html_content = f"""<!DOCTYPE html>
             box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }}
 
-        /* Presentation Mode Toolbar */
         .toolbar {{
             display: flex;
             gap: 10px;
@@ -302,14 +335,12 @@ html_content = f"""<!DOCTYPE html>
             filter: brightness(1.1);
         }}
 
-        /* Main Container */
         .container {{
             max-width: 1300px;
             margin: 28px auto;
             padding: 0 24px;
         }}
 
-        /* Slide View Logic */
         .slide-pane {{
             display: none;
             animation: fadeIn 0.3s ease-in-out;
@@ -324,10 +355,9 @@ html_content = f"""<!DOCTYPE html>
             to {{ opacity: 1; transform: translateY(0); }}
         }}
 
-        /* Metric Cards Grid */
         .kpi-grid {{
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
             gap: 16px;
             margin-bottom: 24px;
         }}
@@ -357,7 +387,7 @@ html_content = f"""<!DOCTYPE html>
         .kpi-card.accent::before {{ background: var(--accent); }}
 
         .kpi-title {{
-            font-size: 0.85rem;
+            font-size: 0.82rem;
             color: var(--text-muted);
             text-transform: uppercase;
             font-weight: 700;
@@ -365,7 +395,7 @@ html_content = f"""<!DOCTYPE html>
         }}
 
         .kpi-value {{
-            font-size: 1.85rem;
+            font-size: 1.8rem;
             font-weight: 800;
             color: var(--text-main);
             margin: 8px 0 4px;
@@ -376,7 +406,6 @@ html_content = f"""<!DOCTYPE html>
             color: var(--text-muted);
         }}
 
-        /* Split Grid for Visuals and Tables */
         .content-grid {{
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -416,11 +445,10 @@ html_content = f"""<!DOCTYPE html>
             background: #fff;
         }}
 
-        /* Styled Tables */
         table {{
             width: 100%;
             border-collapse: collapse;
-            font-size: 0.88rem;
+            font-size: 0.86rem;
             margin-top: 10px;
         }}
 
@@ -434,7 +462,7 @@ html_content = f"""<!DOCTYPE html>
         }}
 
         td {{
-            padding: 10px 12px;
+            padding: 9px 12px;
             border-bottom: 1px solid var(--border);
         }}
 
@@ -445,7 +473,7 @@ html_content = f"""<!DOCTYPE html>
         .badge {{
             display: inline-block;
             padding: 3px 8px;
-            font-size: 0.75rem;
+            font-size: 0.72rem;
             font-weight: 700;
             border-radius: 999px;
             text-transform: uppercase;
@@ -456,7 +484,6 @@ html_content = f"""<!DOCTYPE html>
         .badge-danger {{ background: #fee2e2; color: #991b1b; }}
         .badge-info {{ background: #e0f2fe; color: #075985; }}
 
-        /* Callout Box */
         .callout {{
             background: #eff6ff;
             border-left: 4px solid #3b82f6;
@@ -471,11 +498,6 @@ html_content = f"""<!DOCTYPE html>
             border-left-color: #f59e0b;
         }}
 
-        .callout strong {{
-            color: #1e3a8a;
-        }}
-
-        /* Presentation Slide Navigation Bar at bottom */
         .slide-nav-bar {{
             display: flex;
             justify-content: space-between;
@@ -497,15 +519,16 @@ html_content = f"""<!DOCTYPE html>
 <header>
     <div class="header-container">
         <div class="title-area">
-            <h1>📊 Model Development & Predictive Analytics</h1>
-            <p>Comprehensive Review & Presentation Dashboard | Automobile & Laptop Pricing Studies</p>
+            <h1>📊 Data Science Analytics & Model Development</h1>
+            <p>Executive Presentation Dashboard | EDA & Predictive Regression for Automobiles & Laptops</p>
         </div>
         <div class="nav-tabs" id="tabContainer">
             <button class="nav-tab active" onclick="switchSlide(0)">1. Overview</button>
-            <button class="nav-tab" onclick="switchSlide(1)">2. Automobile Lab</button>
-            <button class="nav-tab" onclick="switchSlide(2)">3. Laptop Lab</button>
-            <button class="nav-tab" onclick="switchSlide(3)">4. Diagnostics & Overfitting</button>
-            <button class="nav-tab" onclick="switchSlide(4)">5. Decision Matrix</button>
+            <button class="nav-tab" onclick="switchSlide(1)">2. Automobile EDA</button>
+            <button class="nav-tab" onclick="switchSlide(2)">3. Automobile Models</button>
+            <button class="nav-tab" onclick="switchSlide(3)">4. Laptop Models</button>
+            <button class="nav-tab" onclick="switchSlide(4)">5. Diagnostics & Overfitting</button>
+            <button class="nav-tab" onclick="switchSlide(5)">6. Decision Matrix</button>
         </div>
         <div class="toolbar">
             <button class="btn btn-outline" onclick="window.print()">🖨️ Print / PDF</button>
@@ -516,43 +539,43 @@ html_content = f"""<!DOCTYPE html>
 
 <div class="container">
 
-    <!-- SLIDE 0: EXECUTIVE OVERVIEW -->
+    <!-- SLIDE 0: OVERVIEW -->
     <div class="slide-pane active" id="slide-0">
         <div class="kpi-grid">
             <div class="kpi-card green">
-                <div class="kpi-title">Top Automobile Model</div>
-                <div class="kpi-value">Test R² 0.764</div>
-                <div class="kpi-desc">Multiple Linear Regression (4 features) | RMSE $5,377</div>
+                <div class="kpi-title">End-to-End Labs</div>
+                <div class="kpi-value">4 Notebooks</div>
+                <div class="kpi-desc">Automobile EDA + Automobile Models + Laptop Models (100% executed)</div>
             </div>
             <div class="kpi-card">
-                <div class="kpi-title">Top Laptop Model</div>
-                <div class="kpi-value">Test R² 0.269</div>
-                <div class="kpi-desc">Multiple Linear Regression (7 features) | RMSE $410</div>
-            </div>
-            <div class="kpi-card red">
-                <div class="kpi-title">Overfitting Trap Exposed</div>
-                <div class="kpi-value">Degree 11 & Poly 2</div>
-                <div class="kpi-desc">High train R² collapsed to negative / low out-of-sample R²</div>
+                <div class="kpi-title">Automobile MLR</div>
+                <div class="kpi-value">Test R² 0.764</div>
+                <div class="kpi-desc">Engine Size, Weight, Horsepower, MPG | RMSE $5,377</div>
             </div>
             <div class="kpi-card accent">
-                <div class="kpi-title">Unit Test Suite</div>
-                <div class="kpi-value">100% Passed</div>
-                <div class="kpi-desc">10 automated assertions across both notebooks verified</div>
+                <div class="kpi-title">EDA Correlation Lead</div>
+                <div class="kpi-value">Engine Size (0.87)</div>
+                <div class="kpi-desc">Pearson p = 9.27 × 10⁻⁶⁴ | Drivetrain ANOVA F = 67.95</div>
+            </div>
+            <div class="kpi-card red">
+                <div class="kpi-title">QA Test Suite</div>
+                <div class="kpi-value">15 / 15 Passed</div>
+                <div class="kpi-desc">Automated unit assertions across all four notebooks</div>
             </div>
         </div>
 
         <div class="content-grid">
             <div class="card">
-                <h3>🎯 Executive Summary & Objectives</h3>
-                <p>This presentation synthesizes the empirical findings, model evaluations, and statistical diagnostics across two standard Data Science regression labs:</p>
+                <h3>🎯 The Data Science Lifecycle: From EDA to Deployment</h3>
+                <p>This presentation unifies exploratory statistical analysis and supervised machine learning across two practical pricing datasets:</p>
                 <ul style="margin: 12px 0 12px 20px; font-size: 0.92rem; line-height: 1.8;">
-                    <li><strong>Automobile Price Prediction:</strong> 201 vehicles, analyzing how engine size, curb weight, horsepower, and fuel efficiency determine market price.</li>
-                    <li><strong>Laptop Price Prediction:</strong> 238 laptops, investigating processor clock speed, RAM, SSD capacity, core count, and GPU on retail pricing.</li>
-                    <li><strong>Methodological Rigor:</strong> Moving beyond naive in-sample $R^2$ to rigorous <strong>80/20 train/test splits</strong>, <strong>5-fold cross-validation</strong>, and <strong>Gauss-Markov diagnostic testing</strong>.</li>
-                    <li><strong>Software Reliability:</strong> Executed end-to-end with <strong>zero warnings</strong> (replacing deprecated Seaborn functions) and verified via automated assertion test suites.</li>
+                    <li><strong>Phase 1: Exploratory Data Analysis (EDA):</strong> Dissecting correlations, detecting extreme sample imbalances, testing categorical group variances via ANOVA, and filtering signals from noise.</li>
+                    <li><strong>Phase 2: Supervised Model Development:</strong> Contrasting Simple Linear Regression, Multiple Linear Regression, and Polynomial Pipelines with StandardScaler.</li>
+                    <li><strong>Phase 3: Out-of-Sample Machine Learning Rigor:</strong> Moving past in-sample $R^2$ to evaluate generalization on 80/20 train/test splits and 5-fold cross-validation.</li>
+                    <li><strong>Phase 4: Statistical Assumption Verification:</strong> Validating Gauss-Markov properties (VIF multicollinearity, Q-Q normality, homoscedasticity).</li>
                 </ul>
                 <div class="callout">
-                    <strong>Key Strategic Insight:</strong> Simpler, well-regularized models (MLR and low-degree polynomials) consistently outperform high-degree polynomial expansions on unseen test data.
+                    <strong>Guiding Principle:</strong> A model is only as sound as its statistical foundation. Feature discovery in EDA directly governs model performance on unseen data.
                 </div>
             </div>
             <div class="card">
@@ -562,28 +585,114 @@ html_content = f"""<!DOCTYPE html>
         </div>
     </div>
 
-    <!-- SLIDE 1: AUTOMOBILE LAB -->
+    <!-- SLIDE 1: AUTOMOBILE EDA -->
     <div class="slide-pane" id="slide-1">
         <div class="kpi-grid">
-            <div class="kpi-card">
-                <div class="kpi-title">Dataset Scale</div>
-                <div class="kpi-value">201 Cars</div>
-                <div class="kpi-desc">29 raw specifications | Target: Price ($5,118 - $45,400)</div>
-            </div>
             <div class="kpi-card green">
-                <div class="kpi-title">Strongest Predictor</div>
-                <div class="kpi-value">Engine Size</div>
-                <div class="kpi-desc">t = 5.80, p = 2.66 × 10⁻⁸ (Highly Significant)</div>
+                <div class="kpi-title">Top Positive Predictor</div>
+                <div class="kpi-value">Engine Size (r=0.87)</div>
+                <div class="kpi-desc">Curb Weight (0.83), Horsepower (0.81), Width (0.75)</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-title">Top Negative Predictor</div>
+                <div class="kpi-value">Highway MPG (r=-0.70)</div>
+                <div class="kpi-desc">City MPG (r=-0.69) | Clear economy vs luxury divide</div>
+            </div>
+            <div class="kpi-card accent">
+                <div class="kpi-title">Categorical Drivetrain</div>
+                <div class="kpi-value">ANOVA F = 67.95</div>
+                <div class="kpi-desc">RWD vs FWD is highly significant (p &lt; 10⁻²⁰)</div>
+            </div>
+            <div class="kpi-card red">
+                <div class="kpi-title">Imbalance Warning</div>
+                <div class="kpi-value">Rear Engine (3 cars)</div>
+                <div class="kpi-desc">Only 1.5% of dataset; high risk of overfitting in ML</div>
+            </div>
+        </div>
+
+        <div class="content-grid">
+            <div class="card">
+                <h3>📊 Pearson Correlation Ranking (Continuous Features)</h3>
+                <img src="data:image/png;base64,{img_eda_corr}" alt="EDA Correlation Bar Chart" class="card-img">
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 8px;">
+                    Continuous features rank clearly into strong positive physical drivers, strong negative fuel efficiency traits, and flat non-significant predictors (<code>peak-rpm</code>, <code>stroke</code>).
+                </p>
+            </div>
+            <div class="card">
+                <h3>🔥 Heatmap: Drivetrain & Body Style Interaction</h3>
+                <img src="data:image/png;base64,{img_eda_heatmap}" alt="EDA Pivot Heatmap" class="card-img">
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 8px;">
+                    RWD convertibles and hardtops command market prices over $23,000, while FWD hatchbacks average under $8,000.
+                </p>
+            </div>
+        </div>
+
+        <div class="content-grid">
+            <div class="card">
+                <h3>📦 Drive Wheels Box Plot & ANOVA Analysis</h3>
+                <img src="data:image/png;base64,{img_eda_box}" alt="EDA Drivetrain Boxplot" class="card-img">
+            </div>
+            <div class="card">
+                <h3>📋 ANOVA Hypothesis Test Summary</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Categorical Attribute</th>
+                            <th>F-Statistic</th>
+                            <th>p-value</th>
+                            <th>Predictive Quality</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>drive-wheels</strong></td>
+                            <td><strong>67.95</strong></td>
+                            <td>3.39 × 10⁻²³</td>
+                            <td><span class="badge badge-success">Excellent</span> Robust sample balance</td>
+                        </tr>
+                        <tr>
+                            <td><strong>engine-location</strong></td>
+                            <td>24.50</td>
+                            <td>1.58 × 10⁻⁶</td>
+                            <td><span class="badge badge-warning">Caution</span> Only 3 rear-engine samples</td>
+                        </tr>
+                        <tr>
+                            <td><strong>body-style</strong></td>
+                            <td>9.13</td>
+                            <td>8.78 × 10⁻⁷</td>
+                            <td><span class="badge badge-info">Moderate</span> Substantial category overlap</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="callout" style="margin-top: 14px;">
+                    <strong>Pairwise Drivetrain Insight:</strong> <code>rwd vs fwd</code> has F = 130.55 (p &lt; 10⁻²⁰), but <code>4wd vs fwd</code> has F = 0.67 (p = 0.418), confirming that 4WD and FWD economy cars have nearly identical price medians.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SLIDE 2: AUTOMOBILE MODELS -->
+    <div class="slide-pane" id="slide-2">
+        <div class="kpi-grid">
+            <div class="kpi-card green">
+                <div class="kpi-title">Top Automobile Model</div>
+                <div class="kpi-value">MLR (4 features)</div>
+                <div class="kpi-desc">Test R² 0.7637 | Test RMSE $5,377</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-title">In-Sample R²</div>
+                <div class="kpi-value">0.8089</div>
+                <div class="kpi-desc">Explains over 80% of variation on training data</div>
             </div>
             <div class="kpi-card red">
                 <div class="kpi-title">Confounding Variable</div>
                 <div class="kpi-value">Highway MPG</div>
-                <div class="kpi-desc">Negative in SLR (-$822), but insignificant in MLR (p = 0.63)</div>
+                <div class="kpi-desc">Slope was -$822 in SLR, but p = 0.627 in MLR due to VIF</div>
             </div>
             <div class="kpi-card accent">
-                <div class="kpi-title">MLR Test Accuracy</div>
-                <div class="kpi-value">76.4%</div>
-                <div class="kpi-desc">Explained out-of-sample variance ($R^2 = 0.7637$)</div>
+                <div class="kpi-title">Regularized Ridge</div>
+                <div class="kpi-value">Test R² 0.768</div>
+                <div class="kpi-desc">L2 penalty protects degree-2 polynomial from overfit</div>
             </div>
         </div>
 
@@ -592,7 +701,7 @@ html_content = f"""<!DOCTYPE html>
                 <h3>📈 Actual vs. Fitted Distribution (MLR)</h3>
                 <img src="data:image/png;base64,{img_auto_dist}" alt="Automobile Distribution Plot" class="card-img">
                 <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 8px;">
-                    Modern KDE plot showing how the 4-feature MLR model closely mirrors actual automobile price density across budget and mid-tier segments.
+                    KDE density distribution showing how the 4-feature MLR model closely tracks actual car price density across both budget and mid-tier vehicles.
                 </p>
             </div>
             <div class="card">
@@ -663,16 +772,11 @@ html_content = f"""<!DOCTYPE html>
         </div>
     </div>
 
-    <!-- SLIDE 2: LAPTOP LAB -->
-    <div class="slide-pane" id="slide-2">
+    <!-- SLIDE 3: LAPTOP MODELS -->
+    <div class="slide-pane" id="slide-3">
         <div class="kpi-grid">
-            <div class="kpi-card">
-                <div class="kpi-title">Dataset Scale</div>
-                <div class="kpi-value">238 Laptops</div>
-                <div class="kpi-desc">7 key hardware features | Target: Price ($527 - $3,810)</div>
-            </div>
             <div class="kpi-card green">
-                <div class="kpi-title">Dominant Price Driver</div>
+                <div class="kpi-title">Dominant Hardware Driver</div>
                 <div class="kpi-value">RAM (GB)</div>
                 <div class="kpi-desc">+$86.81 / GB | t = 6.81, p = 8.40 × 10⁻¹¹</div>
             </div>
@@ -681,10 +785,15 @@ html_content = f"""<!DOCTYPE html>
                 <div class="kpi-value">CPU Frequency</div>
                 <div class="kpi-desc">+$961.28 / GHz | t = 4.71, p = 4.31 × 10⁻⁶</div>
             </div>
+            <div class="kpi-card">
+                <div class="kpi-title">Best Laptop Model</div>
+                <div class="kpi-value">MLR (7 Features)</div>
+                <div class="kpi-desc">Test R² 0.2685 | Test RMSE $410.58</div>
+            </div>
             <div class="kpi-card red">
-                <div class="kpi-title">Non-Significant Feature</div>
-                <div class="kpi-value">SSD Capacity</div>
-                <div class="kpi-desc">p = 0.647 (t = 0.46) | Inconsequential when RAM is controlled</div>
+                <div class="kpi-title">Dimensionality Trap</div>
+                <div class="kpi-value">Poly Deg 2 (-0.05)</div>
+                <div class="kpi-desc">35 terms on 190 samples caused negative generalization R²</div>
             </div>
         </div>
 
@@ -693,7 +802,7 @@ html_content = f"""<!DOCTYPE html>
                 <h3>📈 Actual vs. Fitted Distribution (Laptop MLR)</h3>
                 <img src="data:image/png;base64,{img_laptop_dist}" alt="Laptop Distribution Plot" class="card-img">
                 <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 8px;">
-                    MLR model captures the primary distribution mode around $1,000 and the secondary shoulder around $2,000, significantly outperforming single-variable CPU regression.
+                    The 7-feature MLR model captures the primary budget mode ($1,000) and the secondary premium workstation shoulder ($2,000).
                 </p>
             </div>
             <div class="card">
@@ -757,8 +866,8 @@ html_content = f"""<!DOCTYPE html>
         </div>
     </div>
 
-    <!-- SLIDE 3: DIAGNOSTICS & OVERFITTING -->
-    <div class="slide-pane" id="slide-3">
+    <!-- SLIDE 4: DIAGNOSTICS & OVERFITTING -->
+    <div class="slide-pane" id="slide-4">
         <div class="content-grid">
             <div class="card">
                 <h3>⚠️ The Overfitting Trap: Degree 1 vs 3 vs 11</h3>
@@ -794,8 +903,8 @@ html_content = f"""<!DOCTYPE html>
         </div>
     </div>
 
-    <!-- SLIDE 4: DECISION MATRIX & CONCLUSION -->
-    <div class="slide-pane" id="slide-4">
+    <!-- SLIDE 5: DECISION MATRIX -->
+    <div class="slide-pane" id="slide-5">
         <div class="card" style="margin-bottom: 24px;">
             <h3>⚖️ Strategic Model Decision Matrix</h3>
             <table>
@@ -829,12 +938,11 @@ html_content = f"""<!DOCTYPE html>
 
         <div class="content-grid">
             <div class="card">
-                <h3>🛡️ Automated Quality Assurance Suite</h3>
+                <h3>🛡️ Automated Quality Assurance Suite (15 / 15 Passed)</h3>
                 <ul style="font-size: 0.9rem; line-height: 2;">
-                    <li>✅ <strong>Data Contract Assertions:</strong> Validated non-empty, non-null, and non-negative target distributions.</li>
-                    <li>✅ <strong>Mathematical Bounds:</strong> Verified 0 &le; R&sup2; &le; 1 and R&sup2;(MLR) &gt; R&sup2;(SLR).</li>
-                    <li>✅ <strong>Pipeline Equivalence:</strong> Proved Scikit-Learn Pipeline output matches manual sequential transformations.</li>
-                    <li>✅ <strong>Overfitting Detection:</strong> Confirmed programmatic failure conditions whenever Test R&sup2; diverges excessively from Train R&sup2;.</li>
+                    <li>✅ <strong>Automobile EDA:</strong> 5 unit assertions verified (data integrity, Pearson bounds, physical relationships, pivot shapes, ANOVA).</li>
+                    <li>✅ <strong>Automobile Modeling:</strong> 5 unit assertions verified (bounds, MLR &gt; SLR, pipeline equivalence, overfitting detection).</li>
+                    <li>✅ <strong>Laptop Modeling:</strong> 5 unit assertions verified (bounds, price positivity, prediction vector integrity, pipeline match).</li>
                 </ul>
             </div>
             <div class="card">
@@ -851,7 +959,7 @@ html_content = f"""<!DOCTYPE html>
     <!-- Slide Navigation Footer -->
     <div class="slide-nav-bar">
         <button class="btn btn-outline" style="color: var(--primary);" onclick="prevSlide()">◀ Previous</button>
-        <span class="slide-indicator" id="slideIndicator">Slide 1 of 5: Executive Overview</span>
+        <span class="slide-indicator" id="slideIndicator">Slide 1 of 6: Executive Overview</span>
         <button class="btn btn-primary" onclick="nextSlide()">Next ▶</button>
     </div>
 
@@ -864,7 +972,8 @@ html_content = f"""<!DOCTYPE html>
     const indicator = document.getElementById('slideIndicator');
     const titles = [
         "Executive Overview",
-        "Automobile Pricing Study",
+        "Automobile Exploratory Data Analysis (EDA)",
+        "Automobile Predictive Modeling",
         "Laptop Pricing Study",
         "Statistical Diagnostics & Overfitting",
         "Decision Matrix & Strategic Takeaways"
@@ -896,7 +1005,6 @@ html_content = f"""<!DOCTYPE html>
         }}
     }}
 
-    // Keyboard navigation (Left / Right arrow, Space)
     document.addEventListener('keydown', (e) => {{
         if (e.key === 'ArrowRight' || e.key === ' ') {{
             nextSlide();
@@ -914,4 +1022,7 @@ output_html = "presentation_dashboard.html"
 with open(output_html, "w", encoding="utf-8") as f:
     f.write(html_content)
 
-print(f"Presentation HTML dashboard successfully generated at {output_html} (size: {len(html_content):,} bytes)!")
+# Also update index.html for GitHub Pages
+shutil.copyfile(output_html, "index.html")
+
+print(f"Presentation HTML successfully updated at {output_html} and index.html (size: {len(html_content):,} bytes)!")
