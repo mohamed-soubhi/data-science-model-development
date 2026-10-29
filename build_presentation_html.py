@@ -346,6 +346,18 @@ html_content = f"""<!DOCTYPE html>
             color: white;
         }}
 
+        .btn-github {{
+            background: #24292f;
+            color: #ffffff !important;
+            border: 1px solid rgba(255, 255, 255, 0.35);
+        }}
+
+        .btn-github:hover {{
+            background: #0f1419;
+            border-color: rgba(255, 255, 255, 0.7);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }}
+
         .container {{
             max-width: 1300px;
             margin: 28px auto;
@@ -531,7 +543,7 @@ html_content = f"""<!DOCTYPE html>
     <div class="header-container">
         <div class="title-area">
             <h1>📊 Data Science Analytics, Modeling & Refinement</h1>
-            <p>Master Presentation Dashboard | Automobiles, Laptops & Healthcare Insurance Capstone</p>
+            <p>Master Presentation Dashboard | Cars, Laptops, Healthcare Insurance & King County Housing</p>
         </div>
         <div class="nav-tabs" id="tabContainer">
             <button class="nav-tab active" onclick="switchSlide(0)">1. Portfolio Overview</button>
@@ -543,6 +555,7 @@ html_content = f"""<!DOCTYPE html>
             <button class="nav-tab" onclick="switchSlide(6)">7. Decision Matrix</button>
         </div>
         <div class="toolbar">
+            <a href="https://github.com/mohamed-soubhi/data-science-model-development" target="_blank" class="btn btn-github">⭐ GitHub Repo</a>
             <button class="btn btn-outline" onclick="window.print()">🖨️ Print / PDF</button>
             <button class="btn btn-primary" onclick="toggleFullScreen()">⛶ Fullscreen</button>
         </div>
@@ -556,8 +569,8 @@ html_content = f"""<!DOCTYPE html>
         <div class="kpi-grid">
             <div class="kpi-card green">
                 <div class="kpi-title">Complete Portfolio</div>
-                <div class="kpi-value">6 Notebooks</div>
-                <div class="kpi-desc">Cars EDA & ML, Laptop Dev & Tuning, Insurance Capstone</div>
+                <div class="kpi-value">7 Notebooks</div>
+                <div class="kpi-desc">Cars EDA & ML, Laptop Dev & Tuning, Insurance, House Sales</div>
             </div>
             <div class="kpi-card">
                 <div class="kpi-title">Top Benchmark Accuracy</div>
@@ -570,23 +583,29 @@ html_content = f"""<!DOCTYPE html>
                 <div class="kpi-desc">Ridge alpha tuning lifted Laptop test R² from -0.07 to +0.386</div>
             </div>
             <div class="kpi-card red">
-                <div class="kpi-title">QA Test Suite</div>
-                <div class="kpi-value">25 / 25 Passed</div>
-                <div class="kpi-desc">100% automated assertion pass rate across all notebooks</div>
+                <div class="kpi-title">King County Housing</div>
+                <div class="kpi-value">R² 0.751 Pipeline</div>
+                <div class="kpi-desc">21,613 records, 10/10 questions solved & validated</div>
             </div>
         </div>
 
         <div class="content-grid">
             <div class="card">
-                <h3>🎯 Executive Summary: The 3-Domain Data Science Journey</h3>
+                <h3>🎯 Executive Summary: The 4-Domain Data Science Journey</h3>
                 <p>This master presentation synthesizes empirical findings across three real-world domain studies:</p>
                 <ul style="margin: 12px 0 12px 20px; font-size: 0.92rem; line-height: 1.8;">
                     <li><strong>Automobile Pricing Study:</strong> Uncovering continuous correlations, detecting extreme class imbalance (only 3 rear engines), and isolating engine size as the dominant driver ($F = 67.95, p < 10^{-22}$).</li>
                     <li><strong>Laptop Pricing & Model Refinement:</strong> Diagnosing the collapse of high-degree polynomials (degrees 4 and 5 drop to negative R²), and using <code>GridSearchCV</code> to tune Ridge regularization ($\alpha=100$).</li>
                     <li><strong>Healthcare Insurance Cost Capstone:</strong> Demonstrating how large sample sizes ($n=2,772$) enable polynomial interaction terms (`smoker * bmi`) to excel without overfitting (Test $R^2 = 0.834$).</li>
+                    <li><strong>King County Housing Capstone:</strong> Predicting residential home prices ($n=21,613$) from square footage to multi-feature standardized polynomial pipelines ($R^2 = 0.751$) and regularized Ridge regression.</li>
                 </ul>
                 <div class="callout">
                     <strong>The Golden Rule of Model Complexity:</strong> Polynomial interaction terms destroy generalization on small samples ($n < 200$), but unlock superior predictive power at enterprise scale ($n > 2,000$).
+                </div>
+                <div style="margin-top: 14px;">
+                    <a href="https://github.com/mohamed-soubhi/data-science-model-development" target="_blank" style="display: inline-flex; align-items: center; gap: 8px; font-weight: 600; color: var(--primary-light); text-decoration: none; font-size: 0.95rem;">
+                        📁 Access all 7 notebooks, datasets & source code on GitHub →
+                    </a>
                 </div>
             </div>
             <div class="card">
@@ -913,6 +932,13 @@ html_content = f"""<!DOCTYPE html>
                         <td><span class="badge badge-success">Very High (Test R² 0.834)</span></td>
                         <td>Large sample size (n=2,772) allows interaction terms (smoker * bmi) to generalize without overfitting.</td>
                     </tr>
+                    <tr>
+                        <td><strong>King County Housing</strong></td>
+                        <td><strong>Standardized Polynomial Pipeline (Deg 2)</strong> / Ridge</td>
+                        <td>sqft_living, grade, waterfront, lat, view</td>
+                        <td><span class="badge badge-success">High (R² 0.751 Pipeline, Test R² 0.700)</span></td>
+                        <td>Massive dataset (n=21,613) enables feature interactions & geo-spatial/structural learning without degradation.</td>
+                    </tr>
                 </tbody>
             </table>
         </div>
@@ -936,6 +962,14 @@ html_content = f"""<!DOCTYPE html>
                     <li><strong>Standardize Before Expanding:</strong> Encapsulate <code>StandardScaler</code> in a Scikit-Learn Pipeline to prevent data leakage.</li>
                 </ul>
             </div>
+        </div>
+
+        <div style="text-align: center; margin-top: 24px; padding: 20px; background: #ffffff; border-radius: 12px; border: 1px solid var(--border); box-shadow: var(--shadow);">
+            <h4 style="font-size: 1.1rem; color: var(--primary); margin-bottom: 8px;">🔗 Open Source Code & Reproducibility</h4>
+            <p style="font-size: 0.92rem; color: var(--text-muted); margin-bottom: 14px;">All 7 executed Jupyter notebooks, datasets, test suites, and modeling pipelines are available in the public repository:</p>
+            <a href="https://github.com/mohamed-soubhi/data-science-model-development" target="_blank" class="btn btn-github" style="font-size: 0.95rem; padding: 10px 22px;">
+                ⭐ GitHub: mohamed-soubhi/data-science-model-development
+            </a>
         </div>
     </div>
 

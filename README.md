@@ -1,4 +1,4 @@
-# 🚗💻🏥 Data Science Analytics, Predictive Modeling & Refinement Portfolio
+# 🚗💻🏥🏡 Data Science Analytics, Predictive Modeling & Refinement Portfolio
 
 [![GitHub Pages](https://img.shields.io/badge/Live_Presentation-GitHub_Pages-2ea44f?style=for-the-badge&logo=github)](https://mohamed-soubhi.github.io/data-science-model-development/)
 [![Python](https://img.shields.io/badge/Python-3.10%20%7C%203.11%20%7C%203.12-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
@@ -6,10 +6,11 @@
 [![Scikit-Learn](https://img.shields.io/badge/Scikit--Learn-1.4+-F7931E?style=for-the-badge&logo=scikit-learn&logoColor=white)](https://scikit-learn.org/)
 [![SciPy](https://img.shields.io/badge/SciPy-Statistics-8CAAE6?style=for-the-badge&logo=scipy&logoColor=white)](https://scipy.org/)
 
-An enterprise-grade, end-to-end data science portfolio encompassing **Exploratory Data Analysis (EDA)**, **Statistical Hypothesis Testing (ANOVA, Pearson, OLS Inference)**, **Predictive Machine Learning Regression**, **Overfitting Diagnostics (Runge's Phenomenon, Curse of Dimensionality)**, and **Automated Hyperparameter Optimization (`GridSearchCV`)** across three distinct industries:
+An enterprise-grade, end-to-end data science portfolio encompassing **Exploratory Data Analysis (EDA)**, **Statistical Hypothesis Testing (ANOVA, Pearson, OLS Inference)**, **Predictive Machine Learning Regression**, **Overfitting Diagnostics (Runge's Phenomenon, Curse of Dimensionality)**, and **Automated Hyperparameter Optimization (`GridSearchCV`)** across four distinct industries:
 1. **Automotive Market Pricing** (`automobileEDA.csv`, 201 vehicles)
 2. **Personal Computing Hardware Pricing** (`laptops.csv`, 238 laptops)
 3. **Healthcare Insurance Actuarial Risk** (`insurance.csv`, 2,772 health records)
+4. **King County Residential Real Estate Pricing** (`housing.csv`, 21,613 homes)
 
 👉 **[Launch the Live Interactive Presentation Dashboard](https://mohamed-soubhi.github.io/data-science-model-development/)**
 
@@ -25,6 +26,7 @@ An enterprise-grade, end-to-end data science portfolio encompassing **Explorator
 | **Laptop** | [`practice_model_development_laptops.ipynb`](practice_model_development_laptops.ipynb) | Model Development | SLR (`CPU_frequency`), MLR (7 features), Polynomial Pipelines, Curse of Dimensionality exposure, VIF, OLS parameter testing |
 | **Laptop** | [`practice_model_evaluation.ipynb`](practice_model_evaluation.ipynb) | Evaluation & Tuning | K-Fold Cross Validation (`cv=4`), Polynomial Overfitting sweeps (Deg 1-5 collapse), Ridge alpha sweep, `GridSearchCV` ($\alpha=100$) |
 | **Insurance** | [`practice_project.ipynb`](practice_project.ipynb) | Capstone Project | End-to-end data wrangling, clinical EDA (smoking surcharge +$23,800), SLR, MLR, Standardized Polynomial Pipeline at scale ($R^2=0.834$) |
+| **Housing** | [`House_Sales_in_King_Count_USA.ipynb`](House_Sales_in_King_Count_USA.ipynb) | Capstone Project | 10/10 questions solved: Data hygiene (null imputations, dropping IDs), Exploratory visualizations (Boxplots, Regplots), SLR ($R^2=0.493$), MLR ($R^2=0.658$), Standardized Polynomial Pipeline ($R^2=0.751$), Ridge Regularization ($R^2=0.700$) |
 
 ---
 
@@ -54,9 +56,13 @@ An enterprise-grade, end-to-end data science portfolio encompassing **Explorator
 | **Insurance** | **Standardized Poly 2 Pipeline** | **0.8449** | **0.8339** | **$4,978** | **$3,001** | 🏆 **Top Overall Portfolio Model** |
 | **Insurance** | Regularized Ridge (Poly 2, $\alpha=0.1$) | 0.8449 | 0.8339 | $4,978 | $3,002 | Highly stable regularized fit |
 | **Insurance** | Multiple Linear Regression (6 feats) | 0.7509 | 0.7396 | $6,229 | $4,244 | Strong linear baseline |
+| **Housing** | **Standardized Poly 2 Pipeline (11 feats)** | **0.7513** | **0.7513** | — | — | 🏆 **Top Real Estate Model ($n=21,613$)** |
+| **Housing** | Regularized Ridge (Poly 2, $\alpha=0.1$) | 0.7003 | 0.7003 | — | — | Robust regularized real estate model |
+| **Housing** | Multiple Linear Regression (11 feats) | 0.6577 | 0.6577 | — | — | Strong multi-feature baseline |
 | **Automobile** | **Multiple Linear Regression (4 feats)** | **0.8089** | **0.7637** | **$5,377** | **$3,680** | 🏆 **Top Automobile Model** |
 | **Automobile** | Regularized Ridge (Poly Deg 2) | 0.8315 | 0.7680 | $5,328 | $3,546 | Robust regularized alternative |
 | **Automobile** | Simple Linear Regression (engine-size) | 0.7635 | 0.7102 | $5,934 | $4,098 | Strong single-variable baseline |
+| **Housing** | Simple Linear Regression (sqft_living) | 0.4929 | 0.4929 | — | — | Square footage explains ~50% price |
 | **Insurance** | Simple Linear Regression (smoker) | 0.6231 | 0.5991 | $7,713 | $5,739 | Smoker alone explains 60% of cost |
 | **Automobile** | Polynomial Degree 11 (highway-mpg) | 0.7303 | 0.5560 | $7,370 | $4,845 | ❌ **Overfitted (Runge's Phenomenon)** |
 | **Laptop** | **GridSearchCV Tuned Ridge ($\alpha=100$)** | **0.6033** | **0.3861** | **$368.95** | **$283.42** | 🏆 **Top Laptop Model** |
@@ -88,14 +94,17 @@ Every notebook in this repository contains an automated programmatic assertion s
 ├── practice_model_development_laptops.ipynb     # Laptop Model Development Lab (fully executed)
 ├── practice_model_evaluation.ipynb              # Laptop Evaluation & Tuning Lab (fully executed)
 ├── practice_project.ipynb                       # Medical Insurance Capstone Lab (fully executed)
+├── House_Sales_in_King_Count_USA.ipynb          # King County Real Estate Regression Lab (10/10 questions solved)
 ├── automobileEDA.csv                            # Automobile dataset (201 observations)
 ├── laptops.csv                                  # Laptop pricing dataset (238 observations)
 ├── insurance.csv                                # Medical insurance dataset (2,772 observations)
+├── housing.csv                                  # King County housing dataset (21,613 observations)
 ├── build_enhanced_eda_notebook.py               # Automated builder for EDA notebooks
 ├── build_enhanced_notebook.py                   # Automated builder for Automobile Model Dev notebook
 ├── build_enhanced_laptops_notebook.py           # Automated builder for Laptop notebook
 ├── build_enhanced_model_evaluation.py           # Automated builder for Laptop Model Evaluation notebook
 ├── build_enhanced_insurance_project.py          # Automated builder for Medical Insurance Capstone notebook
+├── solve_house_sales.py                         # Solution injector for House Sales King County project
 ├── build_presentation_html.py                   # Automated builder for the HTML presentation dashboard
 └── README.md                                    # Master project documentation
 ```
