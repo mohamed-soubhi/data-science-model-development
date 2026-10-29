@@ -1,4 +1,4 @@
-# 🚗💻 Data Science Exploratory Analysis & Predictive Modeling
+# 🚗💻🏥 Data Science Analytics, Predictive Modeling & Refinement Portfolio
 
 [![GitHub Pages](https://img.shields.io/badge/Live_Presentation-GitHub_Pages-2ea44f?style=for-the-badge&logo=github)](https://mohamed-soubhi.github.io/data-science-model-development/)
 [![Python](https://img.shields.io/badge/Python-3.10%20%7C%203.11%20%7C%203.12-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
@@ -6,96 +6,106 @@
 [![Scikit-Learn](https://img.shields.io/badge/Scikit--Learn-1.4+-F7931E?style=for-the-badge&logo=scikit-learn&logoColor=white)](https://scikit-learn.org/)
 [![SciPy](https://img.shields.io/badge/SciPy-Statistics-8CAAE6?style=for-the-badge&logo=scipy&logoColor=white)](https://scipy.org/)
 
-A rigorous, end-to-end statistical audit, exploratory data analysis (EDA), and machine learning regression framework for **Automobile** and **Laptop** pricing datasets.
+An enterprise-grade, end-to-end data science portfolio encompassing **Exploratory Data Analysis (EDA)**, **Statistical Hypothesis Testing (ANOVA, Pearson, OLS Inference)**, **Predictive Machine Learning Regression**, **Overfitting Diagnostics (Runge's Phenomenon, Curse of Dimensionality)**, and **Automated Hyperparameter Optimization (`GridSearchCV`)** across three distinct industries:
+1. **Automotive Market Pricing** (`automobileEDA.csv`, 201 vehicles)
+2. **Personal Computing Hardware Pricing** (`laptops.csv`, 238 laptops)
+3. **Healthcare Insurance Actuarial Risk** (`insurance.csv`, 2,772 health records)
 
 👉 **[Launch the Live Interactive Presentation Dashboard](https://mohamed-soubhi.github.io/data-science-model-development/)**
 
 ---
 
-## 📑 Core Modules in this Repository
+## 📑 Portfolio Curriculum & Notebook Architecture
 
-| Module | Notebook | Domain | Key Methodologies & Additions |
+| Domain | Notebook | Phase | Focus & Key Methodologies |
 | :--- | :--- | :--- | :--- |
-| **EDA Lab** | [`Exploratory_data_analysis_cars.ipynb`](Exploratory_data_analysis_cars.ipynb) | Automobile | Pearson correlation ($r$ & $p$-values), ANOVA $F$-tests (`drive-wheels`, `body-style`, `engine-location`), 2D Pivot Heatmaps, Value Counts, 5 automated unit tests |
-| **EDA Lab (Copy 2)** | [`Exploratory_data_analysis_cars2.ipynb`](Exploratory_data_analysis_cars2.ipynb) | Automobile | Identical verified, production-grade review notebook |
-| **Model Dev Lab** | [`DA0101EN-4-Review-Model-Development.ipynb`](DA0101EN-4-Review-Model-Development.ipynb) | Automobile | SLR, MLR (4 features), Poly 2/3/11, Train/Test split (80/20), 5-Fold CV, VIF multicollinearity, OLS hypothesis testing, 5 automated unit tests |
-| **Model Dev Practice** | [`practice_model_development_laptops.ipynb`](practice_model_development_laptops.ipynb) | Laptop | SLR (`CPU_frequency`), MLR (7 features), Polynomial Pipelines, Dimensionality Collapse detection, VIF, OLS $p$-values, 5 automated unit tests |
+| **Automobile** | [`Exploratory_data_analysis_cars.ipynb`](Exploratory_data_analysis_cars.ipynb) | Exploratory Analysis | Pearson correlation ranking ($r$ & $p$-values), one-way & pairwise ANOVA ($F=67.95$), 2D pivot heatmaps, extreme class imbalance audit |
+| **Automobile** | [`Exploratory_data_analysis_cars2.ipynb`](Exploratory_data_analysis_cars2.ipynb) | Exploratory Analysis | Verified duplicate notebook for redundant lab tracking |
+| **Automobile** | [`DA0101EN-4-Review-Model-Development.ipynb`](DA0101EN-4-Review-Model-Development.ipynb) | Predictive Modeling | SLR vs. MLR (4 features), Polynomial fits (Deg 2, 3, 11), VIF multicollinearity, OLS inference, 80/20 Train/Test split, 5-Fold CV |
+| **Laptop** | [`practice_model_development_laptops.ipynb`](practice_model_development_laptops.ipynb) | Model Development | SLR (`CPU_frequency`), MLR (7 features), Polynomial Pipelines, Curse of Dimensionality exposure, VIF, OLS parameter testing |
+| **Laptop** | [`practice_model_evaluation.ipynb`](practice_model_evaluation.ipynb) | Evaluation & Tuning | K-Fold Cross Validation (`cv=4`), Polynomial Overfitting sweeps (Deg 1-5 collapse), Ridge alpha sweep, `GridSearchCV` ($\alpha=100$) |
+| **Insurance** | [`practice_project.ipynb`](practice_project.ipynb) | Capstone Project | End-to-end data wrangling, clinical EDA (smoking surcharge +$23,800), SLR, MLR, Standardized Polynomial Pipeline at scale ($R^2=0.834$) |
 
 ---
 
-## 🔍 Major Analytical Insights
+## 🔍 Major Empirical Discoveries & Methodological Insights
 
-### 1. Exploratory Data Analysis (Automobiles)
-- **Continuous Drivers**: `engine-size` ($r = +0.872, p < 10^{-63}$), `curb-weight` ($r = +0.834, p < 10^{-52}$), and `horsepower` ($r = +0.810, p < 10^{-47}$) are the dominant linear predictors of car price.
-- **Fuel Economy**: `highway-mpg` ($r = -0.705$) and `city-mpg` ($r = -0.687$) exhibit strong inverse relationships with price (economy commuter cars vs. luxury vehicles).
-- **Negligible Predictors**: `peak-rpm` ($r = -0.102, p = 0.151$) and `stroke` ($r = +0.082, p = 0.250$) are statistically non-significant ($p > 0.05$) with flat regression lines.
-- **Categorical Drivetrain**: One-way ANOVA confirms `drive-wheels` significantly separates price ($F = 67.95, p < 10^{-22}$). Pairwise tests prove `rwd vs fwd` is massively distinct ($F = 130.55$), whereas `4wd vs fwd` has no significant price difference ($F = 0.67, p = 0.418$).
-- **Class Imbalance Warning**: Only 3 cars out of 201 (1.5%) have rear engines. While rear-engine cars appear expensive, this tiny sample size is prone to severe modeling distortion.
+### 1. The Interaction of Sample Size vs. Model Complexity ($n \gg p$ vs. $n \approx p$)
+- **The Dimensionality Trap on Small Datasets (Laptops, $n=190$ train):** Expanding 7 features into degree-2 polynomials created **35 terms**. Because the ratio of samples to features was under $6:1$, the model memorized noise: in-sample $R^2$ was $0.675$, but out-of-sample Test $R^2$ collapsed to **$-0.048$** (worse than predicting the mean).
+- **Polynomial Superiority at Scale (Insurance, $n=2,217$ train):** Expanding 6 features into 27 terms on 2,217 samples ($n \gg p$) allowed the model to capture genuine non-linear clinical risk compounding (`smoker * bmi`), lifting out-of-sample Test $R^2$ from **$0.740$ to $0.834$** and reducing Test RMSE by over $\$1,100$.
 
-### 2. Model Development & Overfitting Traps
-- **Runge's Phenomenon (Automobiles - Degree 11)**: Fitting an 11th-order polynomial minimizes training error, but introduces severe oscillations at the boundaries ($40 - 55$ mpg), causing out-of-sample Test RMSE to spike to **$\$7,370$**.
-- **Curse of Dimensionality (Laptops - Degree 2)**: Expanding 7 features into degree-2 polynomials created **35 terms**. With only 190 training samples, the model memorized noise, producing a negative Test $R^2$ (**$-0.048$**). Linear MLR proved far superior on unseen test data (**Test $R^2 = 0.269$, RMSE = $\$410.58$**).
-- **Multicollinearity & Sign Flipping**: In automobiles, `engine-size` and `curb-weight` have $VIF > 5.5$ ($r = 0.85$). In SLR, `highway-mpg` has a negative slope ($-822$), but in MLR its coefficient becomes statistically non-significant ($p = 0.627$) because fuel efficiency is redundant once engine size and weight are controlled.
+### 2. Overfitting & Runge's Phenomenon
+- In the Automobile study, fitting an 11th-order polynomial on fuel efficiency minimized training error, but produced severe boundary oscillations ($40 - 55$ mpg), spiking out-of-sample Test RMSE to **$\$7,370$**.
+- In the Laptop evaluation study, sweeping polynomial degrees from 1 to 5 showed that while Train $R^2$ rose monotonically ($0.168 \rightarrow 0.417$), Test $R^2$ plunged into catastrophic negative territory (**$-0.995$ at degree 4** and **$-1.376$ at degree 5**).
 
----
+### 3. Hyperparameter Optimization via `GridSearchCV`
+- Unregularized degree-2 polynomial expansion on laptops yielded an overfitted test score ($-0.073$).
+- Systematic 4-fold `GridSearchCV` selected **$\alpha = 100$** for Ridge regression, shrinking redundant interaction weights and boosting out-of-sample Test $R^2$ to **$+0.386$** (reducing Test RMSE from $\$489$ to $\$369$).
 
-## 🏆 Predictive Model Leaderboard
-
-### Automobile Price Prediction (201 cars)
-| Model Architecture | Train $R^2$ | Test $R^2$ (Unseen) | Test RMSE ($) | Test MAE ($) | Status |
-| :--- | :---: | :---: | :---: | :---: | :--- |
-| **Multiple Linear Regression (4 features)** | **0.8089** | **0.7637** | **$5,377** | **$3,680** | 🏆 **Top Overall Model** |
-| **Regularized Ridge (Poly Deg 2)** | 0.8315 | 0.7680 | $5,328 | $3,546 | 🛡️ Best Regularized Alternative |
-| **Polynomial Degree 2 (Pipeline)** | 0.8526 | 0.7561 | $5,462 | $3,634 | Slight overfitting |
-| **Simple Linear Regression (engine-size)** | 0.7635 | 0.7102 | $5,934 | $4,098 | Strong single-variable baseline |
-| **Polynomial Degree 3 (highway-mpg)** | 0.6933 | 0.6014 | $6,983 | $4,321 | Captures univariate curvature |
-| **Simple Linear Regression (highway-mpg)** | 0.5013 | 0.4247 | $8,390 | $5,618 | Underfits; high error |
-| **Polynomial Degree 11 (highway-mpg)** | 0.7303 | 0.5560 | $7,370 | $4,845 | ❌ **Overfitted (Runge's Phenomenon)** |
-
-### Laptop Price Prediction (238 laptops)
-| Model Architecture | Train $R^2$ | Test $R^2$ (Unseen) | Test RMSE ($) | Test MAE ($) | Status |
-| :--- | :---: | :---: | :---: | :---: | :--- |
-| **Multiple Linear Regression (7 features)** | **0.5212** | **0.2685** | **$410.58** | **$332.66** | 🏆 **Top Overall Model** |
-| **Poly Degree 3 (CPU_frequency)** | 0.2711 | 0.1065 | $453.78 | $376.77 | Captures CPU clock non-linearity |
-| **Poly Degree 5 (CPU_frequency)** | 0.3131 | 0.1004 | $455.34 | $374.77 | Mild overfitting on CPU curve |
-| **Ridge Regularized (Poly 2)** | 0.6707 | -0.0134 | $483.26 | $328.69 | Negative $R^2$ on test data |
-| **Simple Linear Regression (CPU_freq)** | 0.1384 | -0.0372 | $488.91 | $389.68 | Inadequate baseline |
-| **Polynomial Degree 2 (7 features, 35 terms)** | 0.6746 | -0.0475 | $491.33 | $328.12 | ❌ **Severe Dimensionality Overfitting** |
+### 4. Multicollinearity & Confounding Variables (VIF)
+- In automobiles, `engine-size` and `curb-weight` have $VIF > 5.5$ ($r = 0.85$). In SLR, `highway-mpg` has a negative slope ($-822$), but in MLR its coefficient becomes statistically non-significant ($p = 0.627$) because fuel efficiency is redundant once engine size and weight are accounted for.
 
 ---
 
-## 🛡️ Automated Quality Assurance (15 / 15 Passed)
-All notebooks include automated assertion test suites:
-- **Automobile EDA Suite (5 Tests):** Dataset integrity, Pearson correlation bounds ($[-1, 1]$), verified engine-size ($r > 0.8$) and mpg ($r < -0.6$) bounds, pivot table completeness, ANOVA statistical significance ($p < 0.05$).
-- **Automobile Modeling Suite (5 Tests):** In-sample $R^2$ bounds, $R^2_{\text{MLR}} > R^2_{\text{SLR}}$, prediction vector completeness, Scikit-Learn Pipeline equivalence, empirical overfitting detection.
-- **Laptop Modeling Suite (5 Tests):** Dataset contract, price positivity, prediction completeness, pipeline standardization equivalence, MLR out-of-sample dominance over Poly 2.
+## 🏆 Master Cross-Study Benchmark Leaderboard
+
+| Domain | Model Architecture | Train $R^2$ | Test $R^2$ (Unseen) | Test RMSE ($) | Test MAE ($) | Status |
+| :--- | :--- | :---: | :---: | :---: | :---: | :--- |
+| **Insurance** | **Standardized Poly 2 Pipeline** | **0.8449** | **0.8339** | **$4,978** | **$3,001** | 🏆 **Top Overall Portfolio Model** |
+| **Insurance** | Regularized Ridge (Poly 2, $\alpha=0.1$) | 0.8449 | 0.8339 | $4,978 | $3,002 | Highly stable regularized fit |
+| **Insurance** | Multiple Linear Regression (6 feats) | 0.7509 | 0.7396 | $6,229 | $4,244 | Strong linear baseline |
+| **Automobile** | **Multiple Linear Regression (4 feats)** | **0.8089** | **0.7637** | **$5,377** | **$3,680** | 🏆 **Top Automobile Model** |
+| **Automobile** | Regularized Ridge (Poly Deg 2) | 0.8315 | 0.7680 | $5,328 | $3,546 | Robust regularized alternative |
+| **Automobile** | Simple Linear Regression (engine-size) | 0.7635 | 0.7102 | $5,934 | $4,098 | Strong single-variable baseline |
+| **Insurance** | Simple Linear Regression (smoker) | 0.6231 | 0.5991 | $7,713 | $5,739 | Smoker alone explains 60% of cost |
+| **Automobile** | Polynomial Degree 11 (highway-mpg) | 0.7303 | 0.5560 | $7,370 | $4,845 | ❌ **Overfitted (Runge's Phenomenon)** |
+| **Laptop** | **GridSearchCV Tuned Ridge ($\alpha=100$)** | **0.6033** | **0.3861** | **$368.95** | **$283.42** | 🏆 **Top Laptop Model** |
+| **Laptop** | Multiple Linear Regression (7 feats) | 0.5212 | 0.2685 | $410.58 | $332.66 | Robust unregularized linear model |
+| **Laptop** | Polynomial Degree 2 (Unregularized) | 0.6746 | -0.0475 | $491.33 | $328.12 | ❌ **Curse of Dimensionality** |
+| **Laptop** | Polynomial Degree 5 (CPU_frequency) | 0.4173 | -1.3759 | $716.48 | $457.82 | ❌ **Severe Variance Collapse** |
+
+---
+
+## 🛡️ Automated Quality Assurance Suite (25 / 25 Passed)
+
+Every notebook in this repository contains an automated programmatic assertion suite:
+1. **Automobile EDA Suite (5 Tests):** Dataset schema, Pearson bounds ($[-1, 1]$), verified physical relationships ($r_{\text{engine}} > 0.8, r_{\text{mpg}} < -0.6$), pivot integrity, ANOVA statistical significance ($p < 0.05$).
+2. **Automobile Modeling Suite (5 Tests):** In-sample $R^2$ constraints, $R^2_{\text{MLR}} > R^2_{\text{SLR}}$, prediction vector completeness, Scikit-Learn Pipeline equivalence, empirical overfitting detection.
+3. **Laptop Modeling Suite (5 Tests):** Dimension integrity, price positivity, prediction vector sanity, pipeline scaling match, out-of-sample MLR dominance.
+4. **Laptop Evaluation Suite (5 Tests):** Cross-validation vector completeness, overfitting detection ($R^2_{\text{deg 1}} > R^2_{\text{deg 5}}$), GridSearch parameter selection, tuned Ridge dominance.
+5. **Insurance Capstone Suite (5 Tests):** Data contract compliance, $R^2$ hierarchy, complete predictions, pipeline transformation equivalence, polynomial superiority at enterprise scale.
 
 ---
 
 ## 📁 Repository Structure
 
 ```text
-├── index.html                                   # Interactive Presentation Dashboard (GitHub Pages)
+├── index.html                                   # Master Interactive Presentation Dashboard (GitHub Pages)
 ├── presentation_dashboard.html                  # Standalone offline presentation deck with embedded base64 charts
-├── Exploratory_data_analysis_cars.ipynb         # Enhanced Automobile EDA Notebook (fully executed)
-├── Exploratory_data_analysis_cars2.ipynb        # Enhanced Automobile EDA Notebook (Copy 2, fully executed)
-├── DA0101EN-4-Review-Model-Development.ipynb    # Enhanced Automobile Price Prediction Lab (fully executed)
-├── practice_model_development_laptops.ipynb     # Enhanced Laptop Price Prediction Lab (fully executed)
+├── Exploratory_data_analysis_cars.ipynb         # Automobile EDA Lab (fully executed)
+├── Exploratory_data_analysis_cars2.ipynb        # Automobile EDA Lab (Copy 2, fully executed)
+├── DA0101EN-4-Review-Model-Development.ipynb    # Automobile Predictive Modeling Lab (fully executed)
+├── practice_model_development_laptops.ipynb     # Laptop Model Development Lab (fully executed)
+├── practice_model_evaluation.ipynb              # Laptop Evaluation & Tuning Lab (fully executed)
+├── practice_project.ipynb                       # Medical Insurance Capstone Lab (fully executed)
 ├── automobileEDA.csv                            # Automobile dataset (201 observations)
 ├── laptops.csv                                  # Laptop pricing dataset (238 observations)
+├── insurance.csv                                # Medical insurance dataset (2,772 observations)
 ├── build_enhanced_eda_notebook.py               # Automated builder for EDA notebooks
 ├── build_enhanced_notebook.py                   # Automated builder for Automobile Model Dev notebook
 ├── build_enhanced_laptops_notebook.py           # Automated builder for Laptop notebook
+├── build_enhanced_model_evaluation.py           # Automated builder for Laptop Model Evaluation notebook
+├── build_enhanced_insurance_project.py          # Automated builder for Medical Insurance Capstone notebook
 ├── build_presentation_html.py                   # Automated builder for the HTML presentation dashboard
-└── README.md                                    # Comprehensive project documentation
+└── README.md                                    # Master project documentation
 ```
 
 ---
 
-## 🖥️ Interactive Presentation Dashboard Features
+## 🖥️ Presentation Dashboard Features
 
 The generated [`index.html`](index.html) is an executive slide presentation with:
-- **Slide Navigation & Tabs**: Switch between 6 presentation slides via top tabs or keyboard arrows (`Left`/`Right` or `Spacebar`).
+- **Slide Navigation & Tabs**: Switch between 7 presentation slides via top tabs or keyboard arrows (`Left`/`Right` or `Spacebar`).
 - **Interactive KPIs**: Live metrics summarizing models, $R^2$ scores, ANOVA statistics, and pricing drivers.
 - **Embedded Visualizations**: 10 self-contained, high-resolution base64 plots (zero external CDN dependencies).
 - **Fullscreen Mode & PDF Export**: Instant toggle for conference screen sharing or one-click printable executive reports.
@@ -112,7 +122,7 @@ The generated [`index.html`](index.html) is an executive slide presentation with
 
 2. **Install dependencies**:
    ```bash
-   pip install pandas numpy matplotlib seaborn scikit-learn scipy nbformat nbconvert
+   pip install pandas numpy matplotlib seaborn scikit-learn scipy nbformat nbconvert tqdm
    ```
 
 3. **Launch the notebooks**:

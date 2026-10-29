@@ -1,6 +1,6 @@
 """
-Comprehensive script to generate an executive-ready, interactive HTML presentation dashboard
-incorporating both Exploratory Data Analysis (EDA) and Model Development studies.
+Master script to generate an executive-ready, interactive HTML presentation dashboard
+incorporating all studies: Automobile EDA & Modeling, Laptop Evaluation & Tuning, and Insurance Capstone.
 """
 import base64
 import io
@@ -15,9 +15,8 @@ from sklearn.linear_model import LinearRegression, Ridge
 from sklearn.preprocessing import PolynomialFeatures, StandardScaler
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
-from sklearn.model_selection import train_test_split, KFold, cross_val_score
+from sklearn.model_selection import train_test_split, KFold, cross_val_score, GridSearchCV
 
-# Matplotlib styling for high-DPI crisp figures
 plt.rcParams['font.family'] = 'sans-serif'
 plt.rcParams['font.sans-serif'] = ['Segoe UI', 'DejaVu Sans', 'Arial']
 sns.set_theme(style="whitegrid", palette="muted")
@@ -28,66 +27,58 @@ def fig_to_base64(fig):
     plt.close(fig)
     return base64.b64encode(buf.getvalue()).decode('utf-8')
 
-print("1. Generating charts for Automobile EDA...")
+print("1. Generating Automobile Charts...")
 df_auto = pd.read_csv("automobileEDA.csv")
 
-# EDA Fig 1: Pearson Correlation Horizontal Bar Chart
+# Automobile Correlation bar chart
 eda_features = ['engine-size', 'curb-weight', 'horsepower', 'width', 'length', 'wheel-base', 'bore', 'city-mpg', 'highway-mpg', 'peak-rpm']
 eda_corrs = [stats.pearsonr(df_auto[c], df_auto['price'])[0] for c in eda_features]
 
-fig_eda_corr, ax_ec = plt.subplots(figsize=(7.5, 4.2))
+fig_ec, ax_ec = plt.subplots(figsize=(7.2, 4.0))
 colors_corr = ['#2a9d8f' if x > 0.5 else ('#e63946' if x < -0.5 else '#64748b') for x in eda_corrs]
 y_pos = np.arange(len(eda_features))
 ax_ec.barh(y_pos, eda_corrs, color=colors_corr, height=0.65)
 ax_ec.set_yticks(y_pos)
 ax_ec.set_yticklabels(eda_features, fontsize=9.5)
 ax_ec.set_xlabel('Pearson Correlation (r) with Car Price', fontsize=10, fontweight='bold')
-ax_ec.set_title('Correlation Ranking: Continuous Features vs. Price', fontsize=12, fontweight='bold', pad=10)
+ax_ec.set_title('Automobile Feature Correlation Ranking', fontsize=12, fontweight='bold', pad=10)
 ax_ec.axvline(0, color='black', linewidth=1)
 ax_ec.invert_yaxis()
 for i, v in enumerate(eda_corrs):
     offset = 0.02 if v >= 0 else -0.11
     ax_ec.text(v + offset, i + 0.1, f"{v:+.2f}", color='black', fontweight='bold', fontsize=8.5)
-img_eda_corr = fig_to_base64(fig_eda_corr)
+img_eda_corr = fig_to_base64(fig_ec)
 
-# EDA Fig 2: Pivot Table Heatmap (drive-wheels vs body-style)
+# Automobile Pivot Heatmap
 grouped_res = df_auto[['drive-wheels', 'body-style', 'price']].groupby(['drive-wheels', 'body-style'], as_index=False).mean()
 pivot_data = grouped_res.pivot(index='drive-wheels', columns='body-style', values='price').fillna(0)
 
-fig_eda_hm, ax_hm = plt.subplots(figsize=(7.5, 4.2))
+fig_hm, ax_hm = plt.subplots(figsize=(7.2, 4.0))
 sns.heatmap(pivot_data, annot=True, fmt=',.0f', cmap='YlGnBu', ax=ax_hm, 
             cbar_kws={'label': 'Mean Price (USD)'}, linewidths=1, linecolor='white')
-ax_hm.set_title('Heatmap: Average Price by Drivetrain & Body Style', fontsize=12, fontweight='bold', pad=10)
-ax_hm.set_xlabel('Body Style', fontsize=10, fontweight='bold')
-ax_hm.set_ylabel('Drive Wheels', fontsize=10, fontweight='bold')
-img_eda_heatmap = fig_to_base64(fig_eda_hm)
+ax_hm.set_title('Average Car Price by Drivetrain & Body Style', fontsize=12, fontweight='bold', pad=10)
+img_eda_heatmap = fig_to_base64(fig_hm)
 
-# EDA Fig 3: Categorical ANOVA Boxplot (drive-wheels vs price)
-fig_eda_box, ax_box = plt.subplots(figsize=(7.5, 4.2))
+# Automobile Drivetrain Boxplot
+fig_box, ax_box = plt.subplots(figsize=(7.2, 4.0))
 sns.boxplot(x="drive-wheels", y="price", data=df_auto, hue="drive-wheels", palette="Blues", legend=False, ax=ax_box)
-ax_box.set_title('Price Distribution by Drive Wheels (ANOVA F = 67.95, p < 10⁻²²)', fontsize=12, fontweight='bold', pad=10)
-ax_box.set_xlabel('Drive Wheels', fontsize=10, fontweight='bold')
-ax_box.set_ylabel('Price ($)', fontsize=10, fontweight='bold')
-img_eda_box = fig_to_base64(fig_eda_box)
+ax_box.set_title('Car Price by Drive Wheels (ANOVA F = 67.95, p < 10⁻²²)', fontsize=12, fontweight='bold', pad=10)
+img_eda_box = fig_to_base64(fig_box)
 
-print("2. Generating charts for Automobile Model Development...")
+# Automobile Actual vs Fitted MLR
 Z_auto = df_auto[['horsepower', 'curb-weight', 'engine-size', 'highway-mpg']]
 y_auto = df_auto['price']
-
 Xa_tr, Xa_te, ya_tr, ya_te = train_test_split(Z_auto, y_auto, test_size=0.2, random_state=42)
 lm_auto = LinearRegression().fit(Xa_tr, ya_tr)
 
-# Fig 4: Automobile Actual vs Fitted KDE
-fig1, ax1 = plt.subplots(figsize=(7, 4.2))
-sns.kdeplot(y_auto, color="#e63946", label="Actual Price", linewidth=2.5, fill=True, alpha=0.15, ax=ax1)
-sns.kdeplot(lm_auto.predict(Z_auto), color="#1d3557", label="MLR Fitted Values", linewidth=2.5, fill=True, alpha=0.15, ax=ax1)
-ax1.set_title("Automobile Price: Actual vs. MLR Fitted Distribution", fontsize=12, fontweight='bold', pad=10)
-ax1.set_xlabel("Price (USD)", fontsize=10)
-ax1.set_ylabel("Density", fontsize=10)
-ax1.legend(frameon=True, facecolor='white', framealpha=0.9)
-img_auto_dist = fig_to_base64(fig1)
+fig_ad, ax_ad = plt.subplots(figsize=(7.2, 4.0))
+sns.kdeplot(y_auto, color="#e63946", label="Actual Price", linewidth=2.5, fill=True, alpha=0.15, ax=ax_ad)
+sns.kdeplot(lm_auto.predict(Z_auto), color="#1d3557", label="MLR Fitted Values", linewidth=2.5, fill=True, alpha=0.15, ax=ax_ad)
+ax_ad.set_title("Automobile: Actual vs. MLR Fitted Price Density", fontsize=12, fontweight='bold', pad=10)
+ax_ad.legend(frameon=True, facecolor='white', framealpha=0.9)
+img_auto_dist = fig_to_base64(fig_ad)
 
-# Fig 5: Automobile Overfitting (Deg 1 vs 3 vs 11)
+# Automobile Overfitting (Deg 1 vs 3 vs 11)
 x_mpg = df_auto[['highway-mpg']]
 x_tr, x_te, y_tr, y_te = train_test_split(x_mpg, y_auto, test_size=0.2, random_state=42)
 m1 = Pipeline([('model', LinearRegression())]).fit(x_tr, y_tr)
@@ -95,110 +86,135 @@ m3 = Pipeline([('poly', PolynomialFeatures(3)), ('model', LinearRegression())]).
 m11 = Pipeline([('scale', StandardScaler()), ('poly', PolynomialFeatures(11)), ('model', LinearRegression())]).fit(x_tr, y_tr)
 x_dom = pd.DataFrame({'highway-mpg': np.linspace(15, 55, 300)})
 
-fig2, ax2 = plt.subplots(figsize=(7, 4.2))
-ax2.scatter(x_tr, y_tr, color='#457b9d', alpha=0.5, s=30, label='Train (80%)')
-ax2.scatter(x_te, y_te, color='#e63946', marker='^', s=45, label='Test (20%)', edgecolors='k')
-ax2.plot(x_dom, m1.predict(x_dom), 'k--', label=f"Deg 1 [Test R²: {r2_score(y_te, m1.predict(x_te)):.2f}]", linewidth=1.8)
-ax2.plot(x_dom, m3.predict(x_dom), '#2a9d8f', label=f"Deg 3 [Test R²: {r2_score(y_te, m3.predict(x_te)):.2f}]", linewidth=2.2)
-ax2.plot(x_dom, m11.predict(x_dom), '#e76f51', linestyle='-.', label=f"Deg 11 [Test R²: {r2_score(y_te, m11.predict(x_te)):.2f}]", linewidth=1.8)
-ax2.set_title("Automobile: Overfitting Comparison (Degree 1 vs 3 vs 11)", fontsize=12, fontweight='bold', pad=10)
-ax2.set_xlabel("Highway MPG", fontsize=10)
-ax2.set_ylabel("Price ($)", fontsize=10)
-ax2.set_ylim(0, 52000)
-ax2.legend(frameon=True, facecolor='white', framealpha=0.9, fontsize=9)
-img_auto_overfit = fig_to_base64(fig2)
+fig_ao, ax_ao = plt.subplots(figsize=(7.2, 4.0))
+ax_ao.scatter(x_tr, y_tr, color='#457b9d', alpha=0.5, s=30, label='Train (80%)')
+ax_ao.scatter(x_te, y_te, color='#e63946', marker='^', s=45, label='Test (20%)', edgecolors='k')
+ax_ao.plot(x_dom, m1.predict(x_dom), 'k--', label=f"Deg 1 [Test R²: {r2_score(y_te, m1.predict(x_te)):.2f}]", linewidth=1.8)
+ax_ao.plot(x_dom, m3.predict(x_dom), '#2a9d8f', label=f"Deg 3 [Test R²: {r2_score(y_te, m3.predict(x_te)):.2f}]", linewidth=2.2)
+ax_ao.plot(x_dom, m11.predict(x_dom), '#e76f51', linestyle='-.', label=f"Deg 11 [Test R²: {r2_score(y_te, m11.predict(x_te)):.2f}]", linewidth=1.8)
+ax_ao.set_title("Automobile Overfitting: Runge's Phenomenon at Degree 11", fontsize=12, fontweight='bold', pad=10)
+ax_ao.set_ylim(0, 52000)
+ax_ao.legend(frameon=True, facecolor='white', framealpha=0.9, fontsize=9)
+img_auto_overfit = fig_to_base64(fig_ao)
 
-# Fig 6: Automobile VIF / Heatmap
-fig3, ax3 = plt.subplots(figsize=(6, 4))
-sns.heatmap(Z_auto.corr(), annot=True, cmap='Blues', fmt='.2f', vmin=-1, vmax=1, ax=ax3, cbar=False)
-ax3.set_title("Automobile Predictor Correlation Matrix (VIF > 5)", fontsize=11, fontweight='bold', pad=10)
-img_auto_vif = fig_to_base64(fig3)
+# Automobile VIF Correlation
+fig_av, ax_av = plt.subplots(figsize=(6, 4))
+sns.heatmap(Z_auto.corr(), annot=True, cmap='Blues', fmt='.2f', vmin=-1, vmax=1, ax=ax_av, cbar=False)
+ax_av.set_title("Automobile Predictor Correlation (VIF > 5)", fontsize=11, fontweight='bold', pad=10)
+img_auto_vif = fig_to_base64(fig_av)
 
-# Fig 7: Automobile Q-Q Plot
-res_auto = ya_tr - lm_auto.predict(Xa_tr)
-fig4, ax4 = plt.subplots(figsize=(6, 4))
-stats.probplot(res_auto, dist="norm", plot=ax4)
-ax4.get_lines()[0].set_color('#1d3557')
-ax4.get_lines()[1].set_color('#e63946')
-ax4.set_title("Automobile: Normal Q-Q Plot of Residuals", fontsize=11, fontweight='bold', pad=10)
-img_auto_qq = fig_to_base64(fig4)
-
-print("3. Generating charts for Laptop lab...")
+print("2. Generating Laptop Charts...")
 df_lap = pd.read_csv("laptops.csv")
 lap_features = ['CPU_frequency', 'RAM_GB', 'Storage_GB_SSD', 'CPU_core', 'OS', 'GPU', 'Category']
-Z_lap = df_lap[lap_features]
+X_lap = df_lap[lap_features]
 y_lap = df_lap['Price']
 
-Xl_tr, Xl_te, yl_tr, yl_te = train_test_split(Z_lap, y_lap, test_size=0.2, random_state=42)
-lm_lap = LinearRegression().fit(Xl_tr, yl_tr)
+# Laptop Overfitting Curve (Degrees 1 to 5)
+x_tr50, x_te50, y_tr50, y_te50 = train_test_split(X_lap, y_lap, test_size=0.50, random_state=0)
+degs = [1, 2, 3, 4, 5]
+r2_tr_lap = []
+r2_te_lap = []
+for d in degs:
+    pr = PolynomialFeatures(degree=d)
+    x_tr_p = pr.fit_transform(x_tr50[['CPU_frequency']])
+    x_te_p = pr.transform(x_te50[['CPU_frequency']])
+    m = LinearRegression().fit(x_tr_p, y_tr50)
+    r2_tr_lap.append(m.score(x_tr_p, y_tr50))
+    r2_te_lap.append(m.score(x_te_p, y_te50))
 
-# Fig 8: Laptop Actual vs Fitted
-fig5, ax5 = plt.subplots(figsize=(7, 4.2))
-sns.kdeplot(y_lap, color="#e63946", label="Actual Price", linewidth=2.5, fill=True, alpha=0.15, ax=ax5)
-sns.kdeplot(lm_lap.predict(Z_lap), color="#2a9d8f", label="MLR Fitted Values", linewidth=2.5, fill=True, alpha=0.15, ax=ax5)
-ax5.set_title("Laptop Price: Actual vs. MLR Fitted Distribution", fontsize=12, fontweight='bold', pad=10)
-ax5.set_xlabel("Price (USD)", fontsize=10)
-ax5.set_ylabel("Density", fontsize=10)
-ax5.legend(frameon=True, facecolor='white', framealpha=0.9)
-img_laptop_dist = fig_to_base64(fig5)
+fig_lo, ax_lo = plt.subplots(figsize=(7.2, 4.0))
+ax_lo.plot(degs, r2_tr_lap, 'o-', color='#1d3557', linewidth=2.5, label='Train R² (Memorization)', markersize=7)
+ax_lo.plot(degs, r2_te_lap, 's--', color='#e63946', linewidth=2.5, label='Test R² (Generalization)', markersize=7)
+ax_lo.axhline(0, color='gray', linestyle=':', linewidth=1)
+ax_lo.set_title("Laptop Overfitting Curve: Degrees 1 to 5 Collapse", fontsize=12, fontweight='bold', pad=10)
+ax_lo.set_xlabel("Polynomial Degree", fontsize=10)
+ax_lo.set_ylabel("R² Score", fontsize=10)
+ax_lo.set_ylim(-1.6, 0.6)
+ax_lo.legend(frameon=True, facecolor='white')
+img_lap_overfit_curve = fig_to_base64(fig_lo)
 
-# Fig 9: Laptop Overfitting comparison (MLR vs Poly Deg 2)
-p2_lap = Pipeline([('scale', StandardScaler()), ('poly', PolynomialFeatures(2, include_bias=False)), ('model', LinearRegression())]).fit(Xl_tr, yl_tr)
+# Laptop GridSearchCV Tuning Chart
+pr2 = PolynomialFeatures(degree=2, include_bias=False)
+x_lap_pr2 = pr2.fit_transform(x_tr50)
+x_lap_pr2_te = pr2.transform(x_te50)
 
-fig6, ax6 = plt.subplots(figsize=(7, 4.2))
-models_bar = ['MLR (7 feats)', 'Poly Deg 2 (35 terms)']
-train_r2s = [r2_score(yl_tr, lm_lap.predict(Xl_tr)), r2_score(yl_tr, p2_lap.predict(Xl_tr))]
-test_r2s = [r2_score(yl_te, lm_lap.predict(Xl_te)), r2_score(yl_te, p2_lap.predict(Xl_te))]
-x_pos = np.arange(len(models_bar))
-width = 0.35
+alphas_test = [0.001, 0.01, 0.1, 1, 10, 100]
+ridge_scores = [cross_val_score(Ridge(alpha=a), x_lap_pr2, y_tr50, cv=4).mean() for a in alphas_test]
 
-rects1 = ax6.bar(x_pos - width/2, train_r2s, width, label='Train R² (In-Sample)', color='#457b9d')
-rects2 = ax6.bar(x_pos + width/2, test_r2s, width, label='Test R² (Out-of-Sample)', color='#e76f51')
+fig_lg, ax_lg = plt.subplots(figsize=(7.2, 4.0))
+ax_lg.plot([str(a) for a in alphas_test], ridge_scores, 'd-', color='#2a9d8f', linewidth=2.5, markersize=8)
+ax_lg.set_title("Laptop GridSearchCV: Mean 4-Fold CV R² vs. Ridge Alpha", fontsize=12, fontweight='bold', pad=10)
+ax_lg.set_xlabel("Regularization Alpha", fontsize=10)
+ax_lg.set_ylabel("4-Fold CV Mean R²", fontsize=10)
+img_lap_grid = fig_to_base64(fig_lg)
 
-ax6.set_ylabel('R² Score', fontsize=10)
-ax6.set_title('Laptop Overfitting: High Train R² vs Negative Test R²', fontsize=12, fontweight='bold', pad=10)
-ax6.set_xticks(x_pos)
-ax6.set_xticklabels(models_bar, fontsize=10)
-ax6.axhline(0, color='gray', linestyle='--', linewidth=0.8)
-ax6.legend(frameon=True, facecolor='white')
+print("3. Generating Medical Insurance Charts...")
+df_ins = pd.read_csv("insurance.csv", header=None)
+df_ins.columns = ['age', 'gender', 'bmi', 'no_of_children', 'smoker', 'region', 'charges']
+df_ins = df_ins.replace('?', np.nan)
+df_ins['smoker'] = df_ins['smoker'].fillna(df_ins['smoker'].value_counts().idxmax()).astype(int)
+df_ins['age'] = df_ins['age'].astype(float).fillna(df_ins['age'].astype(float).mean()).astype(int)
+df_ins['bmi'] = df_ins['bmi'].astype(float)
+df_ins['charges'] = np.round(df_ins['charges'].astype(float), 2)
 
-for rect in rects1 + rects2:
-    h = rect.get_height()
-    ax6.annotate(f'{h:.2f}', xy=(rect.get_x() + rect.get_width()/2, h),
-                xytext=(0, 3 if h >= 0 else -12), textcoords="offset points",
-                ha='center', va='bottom', fontsize=9, fontweight='bold')
+# Insurance Boxplot
+fig_ib, ax_ib = plt.subplots(figsize=(7.2, 4.0))
+sns.boxplot(x="smoker", y="charges", data=df_ins, hue="smoker", palette=["#2a9d8f", "#e63946"], legend=False, ax=ax_ib)
+ax_ib.set_title("Medical Insurance Charges: Non-Smoker vs. Smoker (+$23,600)", fontsize=12, fontweight='bold', pad=10)
+ax_ib.set_xticks([0, 1])
+ax_ib.set_xticklabels(["Non-Smoker (0)", "Smoker (1)"], fontsize=10)
+ax_ib.set_ylabel("Annual Charges (USD)", fontsize=10)
+img_ins_box = fig_to_base64(fig_ib)
 
-img_laptop_overfit = fig_to_base64(fig6)
+# Insurance Actual vs Fitted Poly Pipeline
+Z_ins = df_ins[['age', 'gender', 'bmi', 'no_of_children', 'smoker', 'region']]
+y_ins = df_ins['charges']
+Xi_tr, Xi_te, yi_tr, yi_te = train_test_split(Z_ins, y_ins, test_size=0.2, random_state=42)
 
-# Fig 10: Summary Benchmark Chart
-fig8, ax8 = plt.subplots(figsize=(10, 4.5))
-bench_models = [
-    'Auto: MLR', 'Auto: Poly 2', 'Auto: Ridge', 'Auto: SLR Engine', 'Auto: Poly 3', 'Auto: Poly 11',
-    'Lap: MLR', 'Lap: Poly 3', 'Lap: Ridge', 'Lap: SLR CPU', 'Lap: Poly 2'
+poly_ins = Pipeline([
+    ('scale', StandardScaler()),
+    ('poly', PolynomialFeatures(degree=2, include_bias=False)),
+    ('model', LinearRegression())
+]).fit(Xi_tr, yi_tr)
+
+fig_id, ax_id = plt.subplots(figsize=(7.2, 4.0))
+sns.kdeplot(y_ins, color="#e63946", label="Actual Charges", linewidth=2.5, fill=True, alpha=0.15, ax=ax_id)
+sns.kdeplot(poly_ins.predict(Z_ins), color="#1d3557", label="Polynomial Pipeline Fitted Values", linewidth=2.5, fill=True, alpha=0.15, ax=ax_id)
+ax_id.set_title("Insurance: Actual vs. Polynomial Fitted Charges (Test R² = 0.834)", fontsize=12, fontweight='bold', pad=10)
+ax_id.legend(frameon=True, facecolor='white', framealpha=0.9)
+img_ins_dist = fig_to_base64(fig_id)
+
+# Cross-Study Portfolio Benchmark
+fig_bm, ax_bm = plt.subplots(figsize=(10, 4.5))
+portfolio_models = [
+    'Insurance: Poly 2 Pipeline', 'Insurance: Ridge (alpha=0.1)', 'Insurance: MLR (6 feats)', 'Insurance: SLR (smoker)',
+    'Auto: MLR (4 feats)', 'Auto: Ridge Deg 2', 'Auto: SLR (engine)', 'Auto: Poly 11 (highway)',
+    'Laptop: Tuned Ridge', 'Laptop: MLR (7 feats)', 'Laptop: Poly Deg 2 (Unreg)'
 ]
-bench_test_r2 = [0.7637, 0.7561, 0.7680, 0.7102, 0.6014, 0.5560, 0.2685, 0.1065, -0.0134, -0.0372, -0.0475]
-colors = ['#2a9d8f' if x > 0.7 else ('#457b9d' if x > 0.2 else '#e76f51') for x in bench_test_r2]
+portfolio_test_r2 = [0.8339, 0.8339, 0.7396, 0.5991, 0.7637, 0.7680, 0.7102, 0.5560, 0.3861, 0.2685, -0.0475]
+colors_port = ['#2a9d8f' if x > 0.7 else ('#457b9d' if x > 0.2 else '#e63946') for x in portfolio_test_r2]
 
-y_ind = np.arange(len(bench_models))
-ax8.barh(y_ind, bench_test_r2, color=colors, height=0.65)
-ax8.set_yticks(y_ind)
-ax8.set_yticklabels(bench_models, fontsize=9.5)
-ax8.set_xlabel('Test R² (Unseen Data Generalization)', fontsize=10, fontweight='bold')
-ax8.set_title('Cross-Study Benchmark: Out-of-Sample Test R² Comparison', fontsize=12, fontweight='bold', pad=10)
-ax8.axvline(0, color='black', linewidth=1)
-ax8.invert_yaxis()
-for i, v in enumerate(bench_test_r2):
-    ax8.text(v + (0.015 if v >= 0 else -0.07), i + 0.1, f"{v:.3f}", color='black', fontweight='bold', fontsize=8.5)
-img_benchmark = fig_to_base64(fig8)
+y_pos_port = np.arange(len(portfolio_models))
+ax_bm.barh(y_pos_port, portfolio_test_r2, color=colors_port, height=0.65)
+ax_bm.set_yticks(y_pos_port)
+ax_bm.set_yticklabels(portfolio_models, fontsize=9.5)
+ax_bm.set_xlabel('Out-of-Sample Test R² Score', fontsize=10, fontweight='bold')
+ax_bm.set_title('Cross-Study Master Benchmark: Generalization Accuracy', fontsize=12, fontweight='bold', pad=10)
+ax_bm.axvline(0, color='black', linewidth=1)
+ax_bm.invert_yaxis()
+for i, v in enumerate(portfolio_test_r2):
+    offset = 0.015 if v >= 0 else -0.075
+    ax_bm.text(v + offset, i + 0.1, f"{v:.3f}", color='black', fontweight='bold', fontsize=8.5)
+img_master_benchmark = fig_to_base64(fig_bm)
 
-print("4. Building updated HTML Presentation file...")
+print("4. Building Updated Master HTML Presentation...")
 
 html_content = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Data Science Analytics & Model Development | Executive Presentation</title>
+    <title>Data Science Analytics, Modeling & Refinement | Executive Presentation</title>
     <style>
         :root {{
             --primary: #1d3557;
@@ -212,7 +228,6 @@ html_content = f"""<!DOCTYPE html>
             --text-muted: #64748b;
             --border: #e2e8f0;
             --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
         }}
 
         * {{
@@ -277,8 +292,8 @@ html_content = f"""<!DOCTYPE html>
             background: transparent;
             border: none;
             color: #cbd5e1;
-            padding: 8px 14px;
-            font-size: 0.84rem;
+            padding: 8px 13px;
+            font-size: 0.82rem;
             font-weight: 600;
             border-radius: 6px;
             cursor: pointer;
@@ -329,10 +344,6 @@ html_content = f"""<!DOCTYPE html>
         .btn-primary {{
             background: var(--secondary);
             color: white;
-        }}
-
-        .btn-primary:hover {{
-            filter: brightness(1.1);
         }}
 
         .container {{
@@ -519,16 +530,17 @@ html_content = f"""<!DOCTYPE html>
 <header>
     <div class="header-container">
         <div class="title-area">
-            <h1>📊 Data Science Analytics & Model Development</h1>
-            <p>Executive Presentation Dashboard | EDA & Predictive Regression for Automobiles & Laptops</p>
+            <h1>📊 Data Science Analytics, Modeling & Refinement</h1>
+            <p>Master Presentation Dashboard | Automobiles, Laptops & Healthcare Insurance Capstone</p>
         </div>
         <div class="nav-tabs" id="tabContainer">
-            <button class="nav-tab active" onclick="switchSlide(0)">1. Overview</button>
+            <button class="nav-tab active" onclick="switchSlide(0)">1. Portfolio Overview</button>
             <button class="nav-tab" onclick="switchSlide(1)">2. Automobile EDA</button>
             <button class="nav-tab" onclick="switchSlide(2)">3. Automobile Models</button>
-            <button class="nav-tab" onclick="switchSlide(3)">4. Laptop Models</button>
-            <button class="nav-tab" onclick="switchSlide(4)">5. Diagnostics & Overfitting</button>
-            <button class="nav-tab" onclick="switchSlide(5)">6. Decision Matrix</button>
+            <button class="nav-tab" onclick="switchSlide(3)">4. Laptop Evaluation & Tuning</button>
+            <button class="nav-tab" onclick="switchSlide(4)">5. Insurance Capstone</button>
+            <button class="nav-tab" onclick="switchSlide(5)">6. Diagnostics & Overfitting</button>
+            <button class="nav-tab" onclick="switchSlide(6)">7. Decision Matrix</button>
         </div>
         <div class="toolbar">
             <button class="btn btn-outline" onclick="window.print()">🖨️ Print / PDF</button>
@@ -539,48 +551,47 @@ html_content = f"""<!DOCTYPE html>
 
 <div class="container">
 
-    <!-- SLIDE 0: OVERVIEW -->
+    <!-- SLIDE 0: PORTFOLIO OVERVIEW -->
     <div class="slide-pane active" id="slide-0">
         <div class="kpi-grid">
             <div class="kpi-card green">
-                <div class="kpi-title">End-to-End Labs</div>
-                <div class="kpi-value">4 Notebooks</div>
-                <div class="kpi-desc">Automobile EDA + Automobile Models + Laptop Models (100% executed)</div>
+                <div class="kpi-title">Complete Portfolio</div>
+                <div class="kpi-value">6 Notebooks</div>
+                <div class="kpi-desc">Cars EDA & ML, Laptop Dev & Tuning, Insurance Capstone</div>
             </div>
             <div class="kpi-card">
-                <div class="kpi-title">Automobile MLR</div>
-                <div class="kpi-value">Test R² 0.764</div>
-                <div class="kpi-desc">Engine Size, Weight, Horsepower, MPG | RMSE $5,377</div>
+                <div class="kpi-title">Top Benchmark Accuracy</div>
+                <div class="kpi-value">Test R² 0.834</div>
+                <div class="kpi-desc">Insurance Polynomial Pipeline (2,772 health records)</div>
             </div>
             <div class="kpi-card accent">
-                <div class="kpi-title">EDA Correlation Lead</div>
-                <div class="kpi-value">Engine Size (0.87)</div>
-                <div class="kpi-desc">Pearson p = 9.27 × 10⁻⁶⁴ | Drivetrain ANOVA F = 67.95</div>
+                <div class="kpi-title">GridSearch Optimization</div>
+                <div class="kpi-value">+45.9% R² Boost</div>
+                <div class="kpi-desc">Ridge alpha tuning lifted Laptop test R² from -0.07 to +0.386</div>
             </div>
             <div class="kpi-card red">
                 <div class="kpi-title">QA Test Suite</div>
-                <div class="kpi-value">15 / 15 Passed</div>
-                <div class="kpi-desc">Automated unit assertions across all four notebooks</div>
+                <div class="kpi-value">25 / 25 Passed</div>
+                <div class="kpi-desc">100% automated assertion pass rate across all notebooks</div>
             </div>
         </div>
 
         <div class="content-grid">
             <div class="card">
-                <h3>🎯 The Data Science Lifecycle: From EDA to Deployment</h3>
-                <p>This presentation unifies exploratory statistical analysis and supervised machine learning across two practical pricing datasets:</p>
+                <h3>🎯 Executive Summary: The 3-Domain Data Science Journey</h3>
+                <p>This master presentation synthesizes empirical findings across three real-world domain studies:</p>
                 <ul style="margin: 12px 0 12px 20px; font-size: 0.92rem; line-height: 1.8;">
-                    <li><strong>Phase 1: Exploratory Data Analysis (EDA):</strong> Dissecting correlations, detecting extreme sample imbalances, testing categorical group variances via ANOVA, and filtering signals from noise.</li>
-                    <li><strong>Phase 2: Supervised Model Development:</strong> Contrasting Simple Linear Regression, Multiple Linear Regression, and Polynomial Pipelines with StandardScaler.</li>
-                    <li><strong>Phase 3: Out-of-Sample Machine Learning Rigor:</strong> Moving past in-sample $R^2$ to evaluate generalization on 80/20 train/test splits and 5-fold cross-validation.</li>
-                    <li><strong>Phase 4: Statistical Assumption Verification:</strong> Validating Gauss-Markov properties (VIF multicollinearity, Q-Q normality, homoscedasticity).</li>
+                    <li><strong>Automobile Pricing Study:</strong> Uncovering continuous correlations, detecting extreme class imbalance (only 3 rear engines), and isolating engine size as the dominant driver ($F = 67.95, p < 10^{-22}$).</li>
+                    <li><strong>Laptop Pricing & Model Refinement:</strong> Diagnosing the collapse of high-degree polynomials (degrees 4 and 5 drop to negative R²), and using <code>GridSearchCV</code> to tune Ridge regularization ($\alpha=100$).</li>
+                    <li><strong>Healthcare Insurance Cost Capstone:</strong> Demonstrating how large sample sizes ($n=2,772$) enable polynomial interaction terms (`smoker * bmi`) to excel without overfitting (Test $R^2 = 0.834$).</li>
                 </ul>
                 <div class="callout">
-                    <strong>Guiding Principle:</strong> A model is only as sound as its statistical foundation. Feature discovery in EDA directly governs model performance on unseen data.
+                    <strong>The Golden Rule of Model Complexity:</strong> Polynomial interaction terms destroy generalization on small samples ($n < 200$), but unlock superior predictive power at enterprise scale ($n > 2,000$).
                 </div>
             </div>
             <div class="card">
-                <h3>🏆 Cross-Study Benchmark: Out-of-Sample Test R²</h3>
-                <img src="data:image/png;base64,{img_benchmark}" alt="Benchmark Chart" class="card-img">
+                <h3>🏆 Cross-Study Master Benchmark: Out-of-Sample Test R²</h3>
+                <img src="data:image/png;base64,{img_master_benchmark}" alt="Master Benchmark Chart" class="card-img">
             </div>
         </div>
     </div>
@@ -614,16 +625,10 @@ html_content = f"""<!DOCTYPE html>
             <div class="card">
                 <h3>📊 Pearson Correlation Ranking (Continuous Features)</h3>
                 <img src="data:image/png;base64,{img_eda_corr}" alt="EDA Correlation Bar Chart" class="card-img">
-                <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 8px;">
-                    Continuous features rank clearly into strong positive physical drivers, strong negative fuel efficiency traits, and flat non-significant predictors (<code>peak-rpm</code>, <code>stroke</code>).
-                </p>
             </div>
             <div class="card">
                 <h3>🔥 Heatmap: Drivetrain & Body Style Interaction</h3>
                 <img src="data:image/png;base64,{img_eda_heatmap}" alt="EDA Pivot Heatmap" class="card-img">
-                <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 8px;">
-                    RWD convertibles and hardtops command market prices over $23,000, while FWD hatchbacks average under $8,000.
-                </p>
             </div>
         </div>
 
@@ -664,9 +669,6 @@ html_content = f"""<!DOCTYPE html>
                         </tr>
                     </tbody>
                 </table>
-                <div class="callout" style="margin-top: 14px;">
-                    <strong>Pairwise Drivetrain Insight:</strong> <code>rwd vs fwd</code> has F = 130.55 (p &lt; 10⁻²⁰), but <code>4wd vs fwd</code> has F = 0.67 (p = 0.418), confirming that 4WD and FWD economy cars have nearly identical price medians.
-                </div>
             </div>
         </div>
     </div>
@@ -700,9 +702,6 @@ html_content = f"""<!DOCTYPE html>
             <div class="card">
                 <h3>📈 Actual vs. Fitted Distribution (MLR)</h3>
                 <img src="data:image/png;base64,{img_auto_dist}" alt="Automobile Distribution Plot" class="card-img">
-                <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 8px;">
-                    KDE density distribution showing how the 4-feature MLR model closely tracks actual car price density across both budget and mid-tier vehicles.
-                </p>
             </div>
             <div class="card">
                 <h3>📋 Automobile Model Performance Leaderboard</h3>
@@ -772,141 +771,116 @@ html_content = f"""<!DOCTYPE html>
         </div>
     </div>
 
-    <!-- SLIDE 3: LAPTOP MODELS -->
+    <!-- SLIDE 3: LAPTOP EVALUATION & TUNING -->
     <div class="slide-pane" id="slide-3">
         <div class="kpi-grid">
             <div class="kpi-card green">
-                <div class="kpi-title">Dominant Hardware Driver</div>
-                <div class="kpi-value">RAM (GB)</div>
-                <div class="kpi-desc">+$86.81 / GB | t = 6.81, p = 8.40 × 10⁻¹¹</div>
-            </div>
-            <div class="kpi-card accent">
-                <div class="kpi-title">Secondary Driver</div>
-                <div class="kpi-value">CPU Frequency</div>
-                <div class="kpi-desc">+$961.28 / GHz | t = 4.71, p = 4.31 × 10⁻⁶</div>
+                <div class="kpi-title">Optimal Hyperparameter</div>
+                <div class="kpi-value">Alpha = 100</div>
+                <div class="kpi-desc">Selected via 4-fold GridSearchCV on Ridge regression</div>
             </div>
             <div class="kpi-card">
-                <div class="kpi-title">Best Laptop Model</div>
-                <div class="kpi-value">MLR (7 Features)</div>
-                <div class="kpi-desc">Test R² 0.2685 | Test RMSE $410.58</div>
+                <div class="kpi-title">Tuned Ridge Test R²</div>
+                <div class="kpi-value">0.3861</div>
+                <div class="kpi-desc">Up from -0.073 in unregularized polynomial expansion</div>
             </div>
             <div class="kpi-card red">
-                <div class="kpi-title">Dimensionality Trap</div>
-                <div class="kpi-value">Poly Deg 2 (-0.05)</div>
-                <div class="kpi-desc">35 terms on 190 samples caused negative generalization R²</div>
+                <div class="kpi-title">Degree 5 Overfit</div>
+                <div class="kpi-value">Test R² -1.376</div>
+                <div class="kpi-desc">Severe variance explosion on high-degree polynomial</div>
+            </div>
+            <div class="kpi-card accent">
+                <div class="kpi-title">Cross-Validation Gain</div>
+                <div class="kpi-value">4-Fold Rotation</div>
+                <div class="kpi-desc">Averaged scores eliminate small-sample evaluation bias</div>
             </div>
         </div>
 
         <div class="content-grid">
             <div class="card">
-                <h3>📈 Actual vs. Fitted Distribution (Laptop MLR)</h3>
-                <img src="data:image/png;base64,{img_laptop_dist}" alt="Laptop Distribution Plot" class="card-img">
+                <h3>⚠️ Diagnosing Overfitting Across Degrees 1 to 5</h3>
+                <img src="data:image/png;base64,{img_lap_overfit_curve}" alt="Laptop Overfitting Curve" class="card-img">
                 <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 8px;">
-                    The 7-feature MLR model captures the primary budget mode ($1,000) and the secondary premium workstation shoulder ($2,000).
+                    Train R² rises steadily to 0.417 while Test R² collapses past zero into -1.376, illustrating severe model variance.
                 </p>
             </div>
             <div class="card">
-                <h3>📋 Laptop Model Performance Leaderboard</h3>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Model Architecture</th>
-                            <th>Train R²</th>
-                            <th>Test R²</th>
-                            <th>Test RMSE</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td><strong>Multiple Linear Regression (7 feats)</strong></td>
-                            <td>0.5212</td>
-                            <td><strong>0.2685</strong></td>
-                            <td>$410.58</td>
-                            <td><span class="badge badge-success">Top Choice</span></td>
-                        </tr>
-                        <tr>
-                            <td>Poly Degree 3 (CPU_frequency)</td>
-                            <td>0.2711</td>
-                            <td>0.1065</td>
-                            <td>$453.78</td>
-                            <td><span class="badge badge-info">Modest Fit</span></td>
-                        </tr>
-                        <tr>
-                            <td>Poly Degree 5 (CPU_frequency)</td>
-                            <td>0.3131</td>
-                            <td>0.1004</td>
-                            <td>$455.34</td>
-                            <td><span class="badge badge-warning">Mild Overfit</span></td>
-                        </tr>
-                        <tr>
-                            <td>Ridge Regularized (Poly 2)</td>
-                            <td>0.6707</td>
-                            <td>-0.0134</td>
-                            <td>$483.26</td>
-                            <td><span class="badge badge-danger">Negative R²</span></td>
-                        </tr>
-                        <tr>
-                            <td>Simple Linear Regression (CPU_freq)</td>
-                            <td>0.1384</td>
-                            <td>-0.0372</td>
-                            <td>$488.91</td>
-                            <td><span class="badge badge-danger">Inadequate</span></td>
-                        </tr>
-                        <tr>
-                            <td>Polynomial Degree 2 (7 feats, 35 terms)</td>
-                            <td>0.6746</td>
-                            <td>-0.0475</td>
-                            <td>$491.33</td>
-                            <td><span class="badge badge-danger">Dimensionality Collapse</span></td>
-                        </tr>
-                    </tbody>
-                </table>
+                <h3>🎯 Automated Hyperparameter Tuning (GridSearchCV)</h3>
+                <img src="data:image/png;base64,{img_lap_grid}" alt="GridSearchCV Curve" class="card-img">
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 8px;">
+                    Mean 4-fold cross-validation R² steadily increases as regularization alpha is scaled, reaching stability at alpha = 100.
+                </p>
             </div>
         </div>
     </div>
 
-    <!-- SLIDE 4: DIAGNOSTICS & OVERFITTING -->
+    <!-- SLIDE 4: INSURANCE CAPSTONE -->
     <div class="slide-pane" id="slide-4">
-        <div class="content-grid">
-            <div class="card">
-                <h3>⚠️ The Overfitting Trap: Degree 1 vs 3 vs 11</h3>
-                <img src="data:image/png;base64,{img_auto_overfit}" alt="Overfitting Curves" class="card-img">
-                <div class="callout callout-warning">
-                    <strong>Runge's Phenomenon:</strong> Degree 11 polynomial wiggles aggressively at boundary points (40-55 mpg). While training error is minimized, test error surges ($RMSE = $7,370).
-                </div>
+        <div class="kpi-grid">
+            <div class="kpi-card green">
+                <div class="kpi-title">Dataset Scale</div>
+                <div class="kpi-value">2,772 Patients</div>
+                <div class="kpi-desc">Clinical and demographic features | Target: Charges ($)</div>
             </div>
-            <div class="card">
-                <h3>📉 Laptop Dimensionality Collapse (Poly Deg 2)</h3>
-                <img src="data:image/png;base64,{img_laptop_overfit}" alt="Laptop Overfit Bar Chart" class="card-img">
-                <div class="callout callout-warning">
-                    <strong>Curse of Dimensionality:</strong> Expanding 7 features into degree 2 created 35 terms. With only 190 training laptops, the model memorized noise, producing a negative Test R² (-0.05).
-                </div>
+            <div class="kpi-card red">
+                <div class="kpi-title">Smoking Risk Factor</div>
+                <div class="kpi-value">+$23,838 / Year</div>
+                <div class="kpi-desc">t = 68.61, p &lt; 10⁻¹⁰⁰ (Dominant health risk driver)</div>
+            </div>
+            <div class="kpi-card accent">
+                <div class="kpi-title">Polynomial Test R²</div>
+                <div class="kpi-value">0.8339</div>
+                <div class="kpi-desc">Captures non-linear compounding interactions (smoker * bmi)</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-title">Test RMSE</div>
+                <div class="kpi-value">$4,978</div>
+                <div class="kpi-desc">Down from $8,079 in Single Linear Regression</div>
             </div>
         </div>
 
         <div class="content-grid">
+            <div class="card">
+                <h3>🚬 Smoking Status Impact on Medical Charges</h3>
+                <img src="data:image/png;base64,{img_ins_box}" alt="Insurance Boxplot" class="card-img">
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 8px;">
+                    Smokers face a dramatic upward charge shift: median costs jump from $7,345 to $34,456.
+                </p>
+            </div>
+            <div class="card">
+                <h3>📈 Actual vs. Polynomial Fitted Charges (Test R² = 0.834)</h3>
+                <img src="data:image/png;base64,{img_ins_dist}" alt="Insurance Distribution Plot" class="card-img">
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 8px;">
+                    The degree-2 polynomial pipeline captures both the low-cost non-smoker cluster and the elevated bimodal high-risk tail.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- SLIDE 5: DIAGNOSTICS & OVERFITTING -->
+    <div class="slide-pane" id="slide-5">
+        <div class="content-grid">
+            <div class="card">
+                <h3>⚠️ Runge's Phenomenon: Automobile Degree 11 Curve</h3>
+                <img src="data:image/png;base64,{img_auto_overfit}" alt="Automobile Overfitting" class="card-img">
+                <div class="callout callout-warning">
+                    High-degree polynomials wiggle aggressively at dataset boundaries (40-55 mpg). While training error is low, test RMSE surges to $7,370.
+                </div>
+            </div>
             <div class="card">
                 <h3>🔍 Multicollinearity Diagnostics (VIF)</h3>
                 <img src="data:image/png;base64,{img_auto_vif}" alt="VIF Heatmap" class="card-img">
-                <p style="font-size: 0.85rem; margin-top: 8px;">
-                    In automobiles, <code>engine-size</code> and <code>curb-weight</code> exhibit VIF &gt; 5.5 and pairwise correlation $r = 0.85$. This multicollinearity masks the independent effect of fuel economy.
-                </p>
-            </div>
-            <div class="card">
-                <h3>📊 Residual Normality (Q-Q Plot)</h3>
-                <img src="data:image/png;base64,{img_auto_qq}" alt="Q-Q Plot" class="card-img">
-                <p style="font-size: 0.85rem; margin-top: 8px;">
-                    Residuals adhere closely to the theoretical normal line for standard vehicles, with slight upward deviation in the high-end luxury bracket (&gt; $35,000).
-                </p>
+                <div class="callout callout-warning">
+                    <code>curb-weight</code> and <code>engine-size</code> have VIF &gt; 5.5 (r = 0.85), explaining why highway-mpg became statistically insignificant in MLR (p = 0.627).
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- SLIDE 5: DECISION MATRIX -->
-    <div class="slide-pane" id="slide-5">
+    <!-- SLIDE 6: DECISION MATRIX -->
+    <div class="slide-pane" id="slide-6">
         <div class="card" style="margin-bottom: 24px;">
-            <h3>⚖️ Strategic Model Decision Matrix</h3>
+            <h3>⚖️ Portfolio Strategic Decision Matrix</h3>
             <table>
                 <thead>
                     <tr>
@@ -923,14 +897,21 @@ html_content = f"""<!DOCTYPE html>
                         <td><strong>Multiple Linear Regression</strong> (or Ridge Deg 2)</td>
                         <td>Engine Size (p &lt; 10⁻⁷), Curb Weight (p &lt; 10⁻⁴), Horsepower (p &lt; 10⁻³)</td>
                         <td><span class="badge badge-success">High (Test R² 0.764)</span></td>
-                        <td>Highly transparent coefficients; avoids polynomial edge instability.</td>
+                        <td>Linear coefficients provide full regulatory transparency and avoid edge oscillations.</td>
                     </tr>
                     <tr>
                         <td><strong>Laptop Pricing</strong></td>
-                        <td><strong>Multiple Linear Regression</strong> (7 Features)</td>
+                        <td><strong>GridSearch Tuned Ridge (alpha=100)</strong> or MLR</td>
                         <td>RAM GB (p &lt; 10⁻¹⁰), Category (p &lt; 10⁻⁶), CPU Freq (p &lt; 10⁻⁵)</td>
-                        <td><span class="badge badge-info">Moderate (Test R² 0.269)</span></td>
-                        <td>Polynomial interaction terms suffer from sample sparsity; linear model is safest.</td>
+                        <td><span class="badge badge-info">Moderate (Test R² 0.386)</span></td>
+                        <td>Strong L2 regularization is essential to prevent 35 polynomial interaction terms from collapsing.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Medical Insurance</strong></td>
+                        <td><strong>Standardized Polynomial Pipeline (Deg 2)</strong></td>
+                        <td>Smoker (p &lt; 10⁻¹⁰⁰), Age (p &lt; 10⁻⁶⁰), BMI (p &lt; 10⁻⁴⁰)</td>
+                        <td><span class="badge badge-success">Very High (Test R² 0.834)</span></td>
+                        <td>Large sample size (n=2,772) allows interaction terms (smoker * bmi) to generalize without overfitting.</td>
                     </tr>
                 </tbody>
             </table>
@@ -938,19 +919,21 @@ html_content = f"""<!DOCTYPE html>
 
         <div class="content-grid">
             <div class="card">
-                <h3>🛡️ Automated Quality Assurance Suite (15 / 15 Passed)</h3>
+                <h3>🛡️ Automated Quality Assurance Suite (25 / 25 Passed)</h3>
                 <ul style="font-size: 0.9rem; line-height: 2;">
-                    <li>✅ <strong>Automobile EDA:</strong> 5 unit assertions verified (data integrity, Pearson bounds, physical relationships, pivot shapes, ANOVA).</li>
-                    <li>✅ <strong>Automobile Modeling:</strong> 5 unit assertions verified (bounds, MLR &gt; SLR, pipeline equivalence, overfitting detection).</li>
-                    <li>✅ <strong>Laptop Modeling:</strong> 5 unit assertions verified (bounds, price positivity, prediction vector integrity, pipeline match).</li>
+                    <li>✅ <strong>Automobile EDA (5 Tests):</strong> Integrity, bounds, pivot completeness, ANOVA.</li>
+                    <li>✅ <strong>Automobile Modeling (5 Tests):</strong> In-sample bounds, MLR &gt; SLR, pipeline match.</li>
+                    <li>✅ <strong>Laptop Modeling (5 Tests):</strong> Non-negative prices, prediction vector completeness.</li>
+                    <li>✅ <strong>Laptop Evaluation (5 Tests):</strong> CV validity, overfitting detection, GridSearch optimality.</li>
+                    <li>✅ <strong>Insurance Capstone (5 Tests):</strong> Schema contract, R² hierarchy, polynomial superiority.</li>
                 </ul>
             </div>
             <div class="card">
                 <h3>💡 Key Recommendations for Production</h3>
                 <ul style="font-size: 0.9rem; line-height: 2;">
-                    <li><strong>Always Validate Out-of-Sample:</strong> In-sample $R^2$ is an unconstrained optimizer of training error and cannot be trusted alone.</li>
-                    <li><strong>Enforce Scikit-Learn Pipelines:</strong> Encapsulating <code>StandardScaler</code> within a pipeline eliminates data leakage during cross-validation.</li>
-                    <li><strong>Audit Feature Multicollinearity:</strong> Run VIF tests before drawing causal inferences about individual coefficient signs.</li>
+                    <li><strong>Sample Size Dictates Complexity:</strong> Use MLR on small datasets ($n < 300$); reserve Polynomial Pipelines for larger datasets ($n > 2,000$).</li>
+                    <li><strong>Always Regularize Expanded Feature Spaces:</strong> Tune Ridge $\alpha$ via <code>GridSearchCV</code> to control variance.</li>
+                    <li><strong>Standardize Before Expanding:</strong> Encapsulate <code>StandardScaler</code> in a Scikit-Learn Pipeline to prevent data leakage.</li>
                 </ul>
             </div>
         </div>
@@ -959,7 +942,7 @@ html_content = f"""<!DOCTYPE html>
     <!-- Slide Navigation Footer -->
     <div class="slide-nav-bar">
         <button class="btn btn-outline" style="color: var(--primary);" onclick="prevSlide()">◀ Previous</button>
-        <span class="slide-indicator" id="slideIndicator">Slide 1 of 6: Executive Overview</span>
+        <span class="slide-indicator" id="slideIndicator">Slide 1 of 7: Portfolio Overview</span>
         <button class="btn btn-primary" onclick="nextSlide()">Next ▶</button>
     </div>
 
@@ -971,12 +954,13 @@ html_content = f"""<!DOCTYPE html>
     const tabs = document.querySelectorAll('.nav-tab');
     const indicator = document.getElementById('slideIndicator');
     const titles = [
-        "Executive Overview",
+        "Portfolio Overview",
         "Automobile Exploratory Data Analysis (EDA)",
         "Automobile Predictive Modeling",
-        "Laptop Pricing Study",
+        "Laptop Model Evaluation & Hyperparameter Tuning",
+        "Medical Insurance Cost Analysis Capstone",
         "Statistical Diagnostics & Overfitting",
-        "Decision Matrix & Strategic Takeaways"
+        "Portfolio Decision Matrix & Strategic Takeaways"
     ];
 
     function switchSlide(index) {{
@@ -1022,7 +1006,6 @@ output_html = "presentation_dashboard.html"
 with open(output_html, "w", encoding="utf-8") as f:
     f.write(html_content)
 
-# Also update index.html for GitHub Pages
 shutil.copyfile(output_html, "index.html")
 
-print(f"Presentation HTML successfully updated at {output_html} and index.html (size: {len(html_content):,} bytes)!")
+print(f"Master Presentation HTML successfully updated at {output_html} and index.html (size: {len(html_content):,} bytes)!")
