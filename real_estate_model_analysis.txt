@@ -1,0 +1,14 @@
+Model Performance Interpretation:
+The training R² of 0.91 alongside a test R² of 0.68 reveals significant overfitting and high variance. Although the model explains 91% of target variance during training, its predictive power drops by 23 percentage points on unseen test records (MSE = 28,500). This indicates that the algorithm has memorized training noise and idiosyncratic quirks rather than uncovering purely generalizable market relationships.
+
+Identified Issues and Limitations:
+1. Heteroscedasticity: The expanding residual funnel (increasing spread with higher predicted values) violates the core ordinary least squares (OLS) assumption of constant error variance. The model exhibits variance instability, generating disproportionately larger errors for premium, luxury properties.
+2. Model Over-Complexity / Feature Multicollinearity: The substantial gap between in-sample and out-of-sample metrics signals redundant predictors, collinear variables (such as grade and square footage), or unregularized polynomial features that inflate parameter weights.
+
+Recommended Improvement Strategies:
+1. Target Variable Transformation: Applying a logarithmic transformation (log(price)) compresses right-skewed price distributions and stabilizes variance, directly mitigating heteroscedasticity and aligning residuals closer to a normal distribution.
+2. Regularization (Ridge or Lasso): Introducing L2 (Ridge) or L1 (Lasso) penalties via k-fold cross-validated GridSearchCV shrinks inflated coefficients, eliminates non-informative features, and directly bridges the 0.23 gap between training and testing performance.
+3. Feature Engineering & Outlier Management: Pruning high-leverage luxury anomalies and introducing domain-specific interaction terms (e.g., waterfront status multiplied by grade) allows the model to capture non-linear market premiums without destabilizing broader pricing trends.
+
+Reflection:
+In real-world data analysis, high training accuracy often creates a false sense of security that conceals dangerous structural vulnerabilities. Robust model refinement relies on systematic residual diagnostics and out-of-sample validation to transform an overfitted prototype into a fair, resilient, and production-ready decision tool.
